@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, saveState, getCurrentMonthData } from './state.js';
 
 const monthSelect = document.getElementById('monthSelect');
 const yearSelect = document.getElementById('yearSelect');
@@ -6,15 +6,17 @@ const navLinks = document.querySelectorAll('.nav-link');
 const pages = document.querySelectorAll('.page');
 const toggleSidebar = document.getElementById('toggleSidebar');
 const sidebar = document.getElementById('sidebar');
+const addEmployeeBtn = document.getElementById('openAddEmployee');
+const sidePanel = document.getElementById('side-panel');
+const overlay = document.getElementById('overlay');
 
 const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
 ];
 
-// 1. Initialize Period Selectors (Requirement 13)
+// 1. Ініціалізація селекторів періоду
 function initSelectors() {
-    // Fill Months
     months.forEach((month, index) => {
         const option = document.createElement('option');
         option.value = index;
@@ -22,7 +24,6 @@ function initSelectors() {
         monthSelect.appendChild(option);
     });
 
-    // Fill Years (2025-2027 as per TAs)
     [2025, 2026, 2027].forEach(year => {
         const option = document.createElement('option');
         option.value = year;
@@ -30,22 +31,17 @@ function initSelectors() {
         yearSelect.appendChild(option);
     });
 
-    // Set defaults from state
     monthSelect.value = state.currentMonth;
     yearSelect.value = state.currentYear;
 }
 
-// 2. Tab Navigation Logic (Requirement 13)
+// 2. Навігація між вкладками
 function initNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
             const targetTab = link.dataset.tab;
-
-            // Update Active Link
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-
-            // Switch Pages
             pages.forEach(page => {
                 page.style.display = page.id === `${targetTab}-page` ? 'block' : 'none';
             });
@@ -53,23 +49,7 @@ function initNavigation() {
     });
 }
 
-// 3. Sidebar Toggle (Requirement 13)
-toggleSidebar.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    toggleSidebar.textContent = sidebar.classList.contains('collapsed') ? '→' : '☰';
-});
-
-// Run everything on load
-document.addEventListener('DOMContentLoaded', () => {
-    initSelectors();
-    initNavigation();
-    console.log("App initialized with period:", state.currentYear, state.currentMonth);
-});
-
-const addEmployeeBtn = document.getElementById('openAddEmployee');
-const sidePanel = document.getElementById('side-panel');
-const overlay = document.getElementById('overlay');
-
+// 3. Управління бічною панеллю (Slide-over)
 function openSidePanel(contentHtml) {
     sidePanel.innerHTML = contentHtml;
     sidePanel.classList.add('open');
@@ -81,49 +61,41 @@ function closeSidePanel() {
     overlay.classList.remove('active');
 }
 
-addEmployeeBtn.addEventListener('click', () => {
-    const formHtml = `
-        <h2>Add New Employee</h2>
-        <form id="employeeForm">
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" id="firstName" name="firstName" required minlength="3" pattern="[A-Za-z]+">
-                <span class="error-message">Min 3 letters, only English letters</span>
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" id="lastName" name="lastName" required minlength="3" pattern="[A-Za-z]+">
-            </div>
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" id="dob" name="dob" required>
-                <span class="error-message">Must be 18+ years old</span>
-            </div>
-            <div class="form-group">
-                <label>Position</label>
-                <select id="position" required>
-                    <option value="Junior">Junior</option>
-                    <option value="Middle">Middle</option>
-                    <option value="Senior">Senior</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Architect">Architect</option>
-                    <option value="Director">Director</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Salary</label>
-                <input type="number" id="salary" name="salary" required min="1" step="0.01">
-            </div>
-            <button type="submit" id="submitEmployee" class="btn-primary" disabled>Submit</button>
-            <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
-        </form>
+// 4. Рендеринг таблиці співробітників
+function renderEmployeesTable() {
+    const container = document.getElementById('employees-table-container');
+    const { employees } = getCurrentMonthData();
+
+    if (employees.length === 0) {
+        container.innerHTML = '<p class="empty-state">No employees found for this period. Click "Add Employee" to start.</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Position</th>
+                    <th>Salary</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${employees.map(emp => `
+                    <tr>
+                        <td>${emp.firstName} ${emp.lastName}</td>
+                        <td>${emp.position}</td>
+                        <td>$${Number(emp.salary).toLocaleString()}</td>
+                        <td><span class="badge">${emp.status}</span></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
     `;
-    openSidePanel(formHtml);
-    initFormValidation(); // Функція для перевірки 18+ років та активації кнопки
-});
+}
 
-overlay.addEventListener('click', closeSidePanel);
-
+// 5. Валідація та збереження форми
 function initFormValidation() {
     const form = document.getElementById('employeeForm');
     const submitBtn = document.getElementById('submitEmployee');
@@ -133,20 +105,101 @@ function initFormValidation() {
         const dob = new Date(dobInput.value);
         const age = new Date().getFullYear() - dob.getFullYear();
         const isAdult = age >= 18;
-
+        
         if (!isAdult) {
             dobInput.setCustomValidity("Must be 18+");
         } else {
             dobInput.setCustomValidity("");
         }
-
         submitBtn.disabled = !form.checkValidity();
     });
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        // Тут ми будемо викликати функцію збереження в State
-        console.log("Saving employee...");
+        
+        const formData = new FormData(form);
+        const newEmployee = {
+            id: Date.now(),
+            firstName: formData.get('firstName'),
+            lastName: formData.get('lastName'),
+            dob: formData.get('dob'),
+            position: document.getElementById('position').value,
+            salary: parseFloat(formData.get('salary')),
+            status: 'Active'
+        };
+
+        const monthData = getCurrentMonthData();
+        monthData.employees.push(newEmployee);
+        saveState();
+
         closeSidePanel();
+        renderEmployeesTable();
     });
 }
+
+// 6. Події кнопок та селекторів
+toggleSidebar.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    toggleSidebar.textContent = sidebar.classList.contains('collapsed') ? '→' : '☰';
+});
+
+addEmployeeBtn.addEventListener('click', () => {
+    const formHtml = `
+        <h2>Add New Employee</h2>
+        <form id="employeeForm">
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" name="firstName" required minlength="3" pattern="[A-Za-z]+">
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" name="lastName" required minlength="3" pattern="[A-Za-z]+">
+            </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="dob" name="dob" required>
+            </div>
+            <div class="form-group">
+                <label>Position</label>
+                <select id="position" required>
+                    <option value="Junior">Junior</option>
+                    <option value="Middle">Middle</option>
+                    <option value="Senior">Senior</option>
+                    <option value="Lead">Lead</option>
+                    <option value="Architect">Architect</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Salary</label>
+                <input type="number" name="salary" required min="1">
+            </div>
+            <div class="form-actions">
+                <button type="submit" id="submitEmployee" class="btn-primary" disabled>Submit</button>
+                <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+            </div>
+        </form>
+    `;
+    openSidePanel(formHtml);
+    initFormValidation();
+    document.getElementById('cancelBtn').addEventListener('click', closeSidePanel);
+});
+
+overlay.addEventListener('click', closeSidePanel);
+
+// 7. Запуск програми
+document.addEventListener('DOMContentLoaded', () => {
+    initSelectors();
+    initNavigation();
+    renderEmployeesTable();
+
+    // Слухачі для зміни періоду
+    monthSelect.addEventListener('change', (e) => {
+        state.currentMonth = parseInt(e.target.value);
+        renderEmployeesTable();
+    });
+
+    yearSelect.addEventListener('change', (e) => {
+        state.currentYear = parseInt(e.target.value);
+        renderEmployeesTable();
+    });
+});
