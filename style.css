@@ -43,3 +43,51 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); }
     border-radius: 4px;
     cursor: pointer;
 }
+
+/* Side Panel (Slide-over) */
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Схована за межами екрана */
+    width: 400px;
+    height: 100vh;
+    background: white;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-panel.open {
+    right: 0; /* Виїжджає */
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 999;
+}
+
+.overlay.active {
+    display: block;
+}
+
+/* Форма */
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.error-message { color: red; font-size: 12px; margin-top: 5px; display: none; }
+input:invalid + .error-message { display: block; }
