@@ -190,16 +190,62 @@ overlay.addEventListener('click', closeSidePanel);
 document.addEventListener('DOMContentLoaded', () => {
     initSelectors();
     initNavigation();
+    
+    // Малюємо обидві таблиці при завантаженні сторінки
     renderEmployeesTable();
+    renderProjectsTable(); 
 
-    // Слухачі для зміни періоду
+    // Слухачі для зміни періоду (місяць)
     monthSelect.addEventListener('change', (e) => {
         state.currentMonth = parseInt(e.target.value);
         renderEmployeesTable();
+        renderProjectsTable(); // Оновлюємо і проекти теж
     });
 
+    // Слухачі для зміни періоду (рік)
     yearSelect.addEventListener('change', (e) => {
         state.currentYear = parseInt(e.target.value);
         renderEmployeesTable();
+        renderProjectsTable(); // Оновлюємо і проекти теж
     });
 });
+
+// 8. Рендеринг таблиці проектів 
+function renderProjectsTable() {
+    const container = document.getElementById('projects-table-container');
+    const { projects } = getCurrentMonthData();
+
+    if (projects.length === 0) {
+        container.innerHTML = '<p class="empty-state">No projects found. Add your first project!</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Project Name</th>
+                    <th>Monthly Budget</th>
+                    <th>Actual Costs</th>
+                    <th>Profitability</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${projects.map(proj => {
+                    const costs = 0; // Це ми вирахуємо пізніше
+                    const profit = proj.budget - costs;
+                    return `
+                        <tr>
+                            <td><strong>${proj.name}</strong></td>
+                            <td>$${proj.budget.toLocaleString()}</td>
+                            <td>$${costs}</td>
+                            <td style="color: ${profit >= 0 ? 'green' : 'red'}">
+                                $${profit.toLocaleString()}
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
