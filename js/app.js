@@ -10,12 +10,9 @@ const addEmployeeBtn = document.getElementById('openAddEmployee');
 const sidePanel = document.getElementById('side-panel');
 const overlay = document.getElementById('overlay');
 
-const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-];
-
 // 1. Ініціалізація селекторів періоду
+const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 function initSelectors() {
     months.forEach((month, index) => {
         const option = document.createElement('option');
@@ -49,7 +46,7 @@ function initNavigation() {
     });
 }
 
-// 3. Управління бічною панеллю (Slide-over)
+// 3. Управління бічною панеллю
 function openSidePanel(contentHtml) {
     sidePanel.innerHTML = contentHtml;
     sidePanel.classList.add('open');
@@ -67,7 +64,7 @@ function renderEmployeesTable() {
     const { employees } = getCurrentMonthData();
 
     if (employees.length === 0) {
-        container.innerHTML = '<p class="empty-state">No employees found for this period. Click "Add Employee" to start.</p>';
+        container.innerHTML = '<p class="empty-state">No employees found. Click "Add Employee" to start.</p>';
         return;
     }
 
@@ -95,7 +92,7 @@ function renderEmployeesTable() {
     `;
 }
 
-// 5. Валідація та збереження форми
+// 5. Валідація та збереження форми співробітника
 function initFormValidation() {
     const form = document.getElementById('employeeForm');
     const submitBtn = document.getElementById('submitEmployee');
@@ -105,18 +102,12 @@ function initFormValidation() {
         const dob = new Date(dobInput.value);
         const age = new Date().getFullYear() - dob.getFullYear();
         const isAdult = age >= 18;
-        
-        if (!isAdult) {
-            dobInput.setCustomValidity("Must be 18+");
-        } else {
-            dobInput.setCustomValidity("");
-        }
+        dobInput.setCustomValidity(isAdult ? "" : "Must be 18+");
         submitBtn.disabled = !form.checkValidity();
     });
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         const formData = new FormData(form);
         const newEmployee = {
             id: Date.now(),
@@ -127,17 +118,14 @@ function initFormValidation() {
             salary: parseFloat(formData.get('salary')),
             status: 'Active'
         };
-
-        const monthData = getCurrentMonthData();
-        monthData.employees.push(newEmployee);
+        getCurrentMonthData().employees.push(newEmployee);
         saveState();
-
         closeSidePanel();
         renderEmployeesTable();
     });
 }
 
-// 6. Події кнопок та селекторів
+// 6. Події бічної панелі та кнопок
 toggleSidebar.addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
     toggleSidebar.textContent = sidebar.classList.contains('collapsed') ? '→' : '☰';
@@ -147,42 +135,57 @@ addEmployeeBtn.addEventListener('click', () => {
     const formHtml = `
         <h2>Add New Employee</h2>
         <form id="employeeForm">
-            <div class="form-group">
-                <label>First Name</label>
-                <input type="text" name="firstName" required minlength="3" pattern="[A-Za-z]+">
-            </div>
-            <div class="form-group">
-                <label>Last Name</label>
-                <input type="text" name="lastName" required minlength="3" pattern="[A-Za-z]+">
-            </div>
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" id="dob" name="dob" required>
-            </div>
+            <div class="form-group"><label>First Name</label><input type="text" name="firstName" required minlength="3" pattern="[A-Za-z]+"></div>
+            <div class="form-group"><label>Last Name</label><input type="text" name="lastName" required minlength="3" pattern="[A-Za-z]+"></div>
+            <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" name="dob" required></div>
             <div class="form-group">
                 <label>Position</label>
                 <select id="position" required>
-                    <option value="Junior">Junior</option>
-                    <option value="Middle">Middle</option>
-                    <option value="Senior">Senior</option>
-                    <option value="Lead">Lead</option>
-                    <option value="Architect">Architect</option>
+                    <option value="Junior">Junior</option><option value="Middle">Middle</option><option value="Senior">Senior</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Salary</label>
-                <input type="number" name="salary" required min="1">
-            </div>
+            <div class="form-group"><label>Salary</label><input type="number" name="salary" required min="1"></div>
             <div class="form-actions">
                 <button type="submit" id="submitEmployee" class="btn-primary" disabled>Submit</button>
-                <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+                <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
             </div>
-        </form>
-    `;
+        </form>`;
     openSidePanel(formHtml);
     initFormValidation();
-    document.getElementById('cancelBtn').addEventListener('click', closeSidePanel);
 });
+
+// --- НОВИЙ БЛОК: Додавання Проєкту ---
+const addProjectBtn = document.getElementById('openAddProject');
+if (addProjectBtn) {
+    addProjectBtn.addEventListener('click', () => {
+        const formHtml = `
+            <h2>Add New Project</h2>
+            <form id="projectForm">
+                <div class="form-group"><label>Project Name</label><input type="text" name="projectName" required minlength="3"></div>
+                <div class="form-group"><label>Monthly Budget ($)</label><input type="number" name="budget" required min="1"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Create Project</button>
+                    <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
+                </div>
+            </form>`;
+        openSidePanel(formHtml);
+
+        document.getElementById('projectForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const newProject = {
+                id: Date.now(),
+                name: formData.get('projectName'),
+                budget: parseFloat(formData.get('budget')),
+                assignments: []
+            };
+            getCurrentMonthData().projects.push(newProject);
+            saveState();
+            closeSidePanel();
+            renderProjectsTable();
+        });
+    });
+}
 
 overlay.addEventListener('click', closeSidePanel);
 
@@ -190,29 +193,26 @@ overlay.addEventListener('click', closeSidePanel);
 document.addEventListener('DOMContentLoaded', () => {
     initSelectors();
     initNavigation();
-    
-    // Малюємо обидві таблиці при завантаженні сторінки
     renderEmployeesTable();
-    renderProjectsTable(); 
+    renderProjectsTable();
 
-    // Слухачі для зміни періоду (місяць)
     monthSelect.addEventListener('change', (e) => {
         state.currentMonth = parseInt(e.target.value);
         renderEmployeesTable();
-        renderProjectsTable(); // Оновлюємо і проекти теж
+        renderProjectsTable();
     });
 
-    // Слухачі для зміни періоду (рік)
     yearSelect.addEventListener('change', (e) => {
         state.currentYear = parseInt(e.target.value);
         renderEmployeesTable();
-        renderProjectsTable(); // Оновлюємо і проекти теж
+        renderProjectsTable();
     });
 });
 
 // 8. Рендеринг таблиці проектів 
 function renderProjectsTable() {
     const container = document.getElementById('projects-table-container');
+    if (!container) return;
     const { projects } = getCurrentMonthData();
 
     if (projects.length === 0) {
@@ -223,29 +223,20 @@ function renderProjectsTable() {
     container.innerHTML = `
         <table class="data-table">
             <thead>
-                <tr>
-                    <th>Project Name</th>
-                    <th>Monthly Budget</th>
-                    <th>Actual Costs</th>
-                    <th>Profitability</th>
-                </tr>
+                <tr><th>Project Name</th><th>Monthly Budget</th><th>Actual Costs</th><th>Profitability</th></tr>
             </thead>
             <tbody>
                 ${projects.map(proj => {
-                    const costs = 0; // Це ми вирахуємо пізніше
+                    const costs = 0; 
                     const profit = proj.budget - costs;
                     return `
                         <tr>
                             <td><strong>${proj.name}</strong></td>
                             <td>$${proj.budget.toLocaleString()}</td>
                             <td>$${costs}</td>
-                            <td style="color: ${profit >= 0 ? 'green' : 'red'}">
-                                $${profit.toLocaleString()}
-                            </td>
-                        </tr>
-                    `;
+                            <td style="color: ${profit >= 0 ? 'green' : 'red'}">$${profit.toLocaleString()}</td>
+                        </tr>`;
                 }).join('')}
             </tbody>
-        </table>
-    `;
+        </table>`;
 }
