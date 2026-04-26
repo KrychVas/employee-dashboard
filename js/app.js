@@ -1,6 +1,7 @@
 import { state, saveState, getCurrentMonthData } from './state.js';
+import { calculations } from './calculations.js';
 
-// Елементи інтерфейсу
+// --- ЕЛЕМЕНТИ ІНТЕРФЕЙСУ ---
 const monthSelect = document.getElementById('monthSelect');
 const yearSelect = document.getElementById('yearSelect');
 const navLinks = document.querySelectorAll('.nav-link');
@@ -12,7 +13,6 @@ const overlay = document.getElementById('overlay');
 
 // --- 1. ДОПОМІЖНІ ЛОГІЧНІ ФУНКЦІЇ ---
 
-// Розрахунок віку на основі дати народження
 function calculateAge(dobString) {
     if (!dobString) return 0;
     const today = new Date();
@@ -25,7 +25,6 @@ function calculateAge(dobString) {
     return age;
 }
 
-// Форматування грошей: 10 000.00
 function formatCurrency(amount) {
     return amount.toLocaleString('uk-UA', {
         minimumFractionDigits: 2,
@@ -33,7 +32,6 @@ function formatCurrency(amount) {
     }).replace(',', '.');
 }
 
-// Розрахунок фінансів конкретного проєкту
 function calculateProjectFinances(project) {
     const { employees } = getCurrentMonthData();
     let projectCosts = 0;
@@ -42,7 +40,6 @@ function calculateProjectFinances(project) {
     project.assignments.forEach(assign => {
         const emp = employees.find(e => e.id === assign.employeeId);
         if (emp) {
-            // Проєкт платить лише за частку часу працівника
             projectCosts += emp.salary * assign.capacity;
             usedCapacity += assign.capacity;
         }
@@ -55,16 +52,13 @@ function calculateProjectFinances(project) {
     };
 }
 
-// Загальний розрахунок по компанії (Профіт - Bench)
 function calculateCompanyTotalIncome() {
     const { employees, projects } = getCurrentMonthData();
     
-    // 1. Чистий прибуток від усіх проєктів
     let totalProjectsProfit = projects.reduce((sum, proj) => {
         return sum + calculateProjectFinances(proj).profit;
     }, 0);
 
-    // 2. Розрахунок Bench (оплата за незадіяний час)
     let totalBenchCost = 0;
     employees.forEach(emp => {
         const totalEmpLoad = projects.reduce((sum, proj) => {
@@ -72,7 +66,6 @@ function calculateCompanyTotalIncome() {
             return sum + (assignment ? assignment.capacity : 0);
         }, 0);
 
-        // Якщо задіяний менше ніж на 1.0 (100%), різницю платить компанія
         if (totalEmpLoad < 1.0) {
             const benchPart = 1.0 - totalEmpLoad;
             totalBenchCost += emp.salary * benchPart;
@@ -93,7 +86,7 @@ function renderEmployeesTable() {
     const { employees, projects } = getCurrentMonthData();
 
     if (employees.length === 0) {
-        container.innerHTML = '<p class="empty-state">No employees found.</p>';
+        container.innerHTML = '<p style="padding: 20px; color: #718096;">No employees found.</p>';
         return;
     }
 
@@ -123,9 +116,7 @@ function renderEmployeesTable() {
                         <td>${emp.position}</td>
                         <td>$${formatCurrency(emp.salary)}</td>
                         <td>
-                            <button class="btn-small" onclick="alert('Details for ${emp.firstName}')">
-                                Show (${empLoad.toFixed(1)}/1.5)
-                            </button>
+                            <span class="btn-small">${empLoad.toFixed(1)} / 1.5</span>
                         </td>
                         <td>
                             <button class="btn-danger-small" onclick="deleteEmployee(${emp.id})">Delete</button>
@@ -143,11 +134,12 @@ function renderProjectsTable() {
     const { projects } = getCurrentMonthData();
 
     if (projects.length === 0) {
-        container.innerHTML = '<p class="empty-state">No projects found.</p>';
+        container.innerHTML = '<p style="padding: 20px; color: #718096;">No projects found.</p>';
         return;
     }
 
     const { finalIncome, benchCost } = calculateCompanyTotalIncome();
+    const workingDays = calculations.getWorkingDaysCount(state.currentYear, state.currentMonth);
 
     const tableRows = projects.map(proj => {
         const finances = calculateProjectFinances(proj);
@@ -170,26 +162,29 @@ function renderProjectsTable() {
     }).join('');
 
     container.innerHTML = `
+        <div style="margin-bottom: 15px; font-size: 0.9rem; color: #718096;">
+            📅 <strong>${workingDays} working days</strong> in this month
+        </div>
         <table class="data-table">
             <thead>
                 <tr>
                     <th>Company Name</th>
                     <th>Project Name</th>
                     <th>Budget</th>
-                    <th>Employee Capacity</th>
-                    <th>Estimated Income</th>
+                    <th>Capacity</th>
+                    <th>Income</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>${tableRows}</tbody>
         </table>
         <div class="table-footer">
-            <strong>Total Estimated Income: 
+            <strong>Total Monthly Income: 
                 <span style="color: ${finalIncome >= 0 ? '#27ae60' : '#e74c3c'}">
                     $${formatCurrency(finalIncome)}
                 </span>
             </strong>
-            <span style="color: #7f8c8d; margin-left: 10px; font-size: 0.9em;">
+            <span style="margin-left: 10px; font-size: 0.9rem; color: #718096;">
                 (Bench payments: $${formatCurrency(benchCost)})
             </span>
         </div>
@@ -219,10 +214,10 @@ window.openAssignModal = function(projectId) {
     }
 
     const formHtml = `
-        <h3>Assign Employee to ${project.name}</h3>
+        <h3>Assign Employee</h3>
         <form id="assignForm">
             <div class="form-group">
-                <label>Select Employee</label>
+                <label>Employee</label>
                 <select name="employeeId" required>
                     <option value="" disabled selected>Select...</option>
                     ${employees.map(emp => `<option value="${emp.id}">${emp.firstName} ${emp.lastName}</option>`).join('')}
@@ -233,14 +228,9 @@ window.openAssignModal = function(projectId) {
                 <input type="range" name="capacity" min="0.1" max="1.5" step="0.1" value="0.5" 
                        oninput="document.getElementById('capVal').innerText = this.value">
             </div>
-            <div class="form-group">
-                <label>Project Fit: <span id="fitVal">1.0</span></label>
-                <input type="range" name="projectFit" min="0.1" max="1.0" step="0.1" value="1.0" 
-                       oninput="document.getElementById('fitVal').innerText = this.value">
-            </div>
             <div class="form-actions">
                 <button type="submit" class="btn-primary">Confirm</button>
-                <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
+                <button type="button" class="btn-small" onclick="closeSidePanel()">Cancel</button>
             </div>
         </form>`;
     
@@ -251,8 +241,7 @@ window.openAssignModal = function(projectId) {
         const formData = new FormData(e.target);
         project.assignments.push({
             employeeId: parseInt(formData.get('employeeId')),
-            capacity: parseFloat(formData.get('capacity')),
-            fit: parseFloat(formData.get('projectFit'))
+            capacity: parseFloat(formData.get('capacity'))
         });
         saveState();
         closeSidePanel();
@@ -263,14 +252,35 @@ window.openAssignModal = function(projectId) {
 
 // --- 4. ІНІЦІАЛІЗАЦІЯ ---
 
+function initSelectors() {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    monthSelect.innerHTML = '';
+    months.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = m;
+        if (i === state.currentMonth) opt.selected = true;
+        monthSelect.appendChild(opt);
+    });
+
+    yearSelect.innerHTML = '';
+    [2024, 2025, 2026, 2027].forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === state.currentYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    monthSelect.value = state.currentMonth;
-    yearSelect.value = state.currentYear;
+    initSelectors();
 
     // Перемикання табів
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
-            const target = link.dataset.tab;
+            const target = link.getAttribute('data-tab');
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
             pages.forEach(p => p.style.display = p.id === `${target}-page` ? 'block' : 'none');
@@ -283,19 +293,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Додавання Співробітника
     document.getElementById('openAddEmployee').addEventListener('click', () => {
         const formHtml = `
-            <h3>Add Employee</h3>
+            <h3>New Employee</h3>
             <form id="employeeForm">
                 <div class="form-group"><label>First Name</label><input type="text" name="firstName" required></div>
                 <div class="form-group"><label>Last Name</label><input type="text" name="lastName" required></div>
                 <div class="form-group"><label>Birth Date</label><input type="date" name="dob" required></div>
-                <div class="form-group"><label>Salary</label><input type="number" name="salary" required></div>
+                <div class="form-group"><label>Monthly Salary</label><input type="number" name="salary" required></div>
                 <div class="form-group">
                     <label>Position</label>
                     <select name="position">
                         <option>Junior</option><option>Middle</option><option>Senior</option><option>Lead</option>
                     </select>
                 </div>
-                <button type="submit" class="btn-primary">Save</button>
+                <button type="submit" class="btn-primary">Save Employee</button>
             </form>`;
         openSidePanel(formHtml);
         document.getElementById('employeeForm').addEventListener('submit', (e) => {
@@ -316,13 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Додавання Проєкту
     document.getElementById('openAddProject').addEventListener('click', () => {
         const formHtml = `
-            <h3>Add Project</h3>
+            <h3>New Project</h3>
             <form id="projectForm">
                 <div class="form-group"><label>Company</label><input type="text" name="company" required></div>
-                <div class="form-group"><label>Name</label><input type="text" name="name" required></div>
-                <div class="form-group"><label>Budget</label><input type="number" name="budget" required></div>
-                <div class="form-group"><label>Capacity</label><input type="number" name="projectCapacity" value="1" required></div>
-                <button type="submit" class="btn-primary">Create</button>
+                <div class="form-group"><label>Project Name</label><input type="text" name="name" required></div>
+                <div class="form-group"><label>Monthly Budget</label><input type="number" name="budget" required></div>
+                <div class="form-group"><label>Required Capacity</label><input type="number" name="projectCapacity" value="1" step="0.1" required></div>
+                <button type="submit" class="btn-primary">Create Project</button>
             </form>`;
         openSidePanel(formHtml);
         document.getElementById('projectForm').addEventListener('submit', (e) => {
@@ -340,16 +350,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    monthSelect.addEventListener('change', (e) => { state.currentMonth = parseInt(e.target.value); renderEmployeesTable(); renderProjectsTable(); });
-    yearSelect.addEventListener('change', (e) => { state.currentYear = parseInt(e.target.value); renderEmployeesTable(); renderProjectsTable(); });
+    monthSelect.addEventListener('change', (e) => { 
+        state.currentMonth = parseInt(e.target.value); 
+        renderEmployeesTable(); 
+        renderProjectsTable(); 
+    });
+    
+    yearSelect.addEventListener('change', (e) => { 
+        state.currentYear = parseInt(e.target.value); 
+        renderEmployeesTable(); 
+        renderProjectsTable(); 
+    });
     
     toggleSidebar.onclick = () => sidebar.classList.toggle('collapsed');
     overlay.onclick = closeSidePanel;
 });
 
-// Глобальні функції
+// Глобальні функції для HTML
 window.deleteEmployee = (id) => {
-    if(!confirm("Delete?")) return;
+    if(!confirm("Delete employee?")) return;
     const data = getCurrentMonthData();
     data.employees = data.employees.filter(e => e.id !== id);
     data.projects.forEach(p => p.assignments = p.assignments.filter(a => a.employeeId !== id));
@@ -357,7 +376,7 @@ window.deleteEmployee = (id) => {
 };
 
 window.deleteProject = (id) => {
-    if(!confirm("Delete Project?")) return;
+    if(!confirm("Delete project?")) return;
     const data = getCurrentMonthData();
     data.projects = data.projects.filter(p => p.id !== id);
     saveState(); renderProjectsTable();
