@@ -58,6 +58,38 @@ function closeSidePanel() {
     overlay.classList.remove('active');
 }
 
+// --- НОВИЙ БЛОК: ДОПОМІЖНІ РОЗРАХУНКИ (ВИМОГА RS SCHOOL) ---
+function calculateEffectiveCapacity(assignment) {
+    // Коефіцієнт відпусток поки 1 (реалізуємо з календарем), Fit за замовчуванням 1
+    const vacationCoefficient = 1; 
+    const fit = assignment.fit || 1;
+    return assignment.capacity * fit * vacationCoefficient;
+}
+
+function calculateProjectFinances(project) {
+    const { employees } = getCurrentMonthData();
+    let totalUsedEffCapacity = 0;
+    let totalCosts = 0;
+
+    project.assignments.forEach(assign => {
+        const emp = employees.find(e => e.id === assign.employeeId);
+        if (emp) {
+            totalUsedEffCapacity += calculateEffectiveCapacity(assign);
+            // Вартість: зарплата * max(0.5, assignedCapacity)
+            totalCosts += emp.salary * Math.max(0.5, assign.capacity);
+        }
+    });
+
+    const capacityForRevenue = Math.max(project.projectCapacity, totalUsedEffCapacity);
+    const revenuePerUnit = project.budget / (capacityForRevenue || 1);
+    const totalRevenue = revenuePerUnit * totalUsedEffCapacity;
+
+    return {
+        usedCapacity: totalUsedEffCapacity,
+        profit: totalRevenue - totalCosts
+    };
+}
+
 // 4. Рендеринг таблиці співробітників
 function renderEmployeesTable() {
     const container = document.getElementById('employees-table-container');
@@ -75,6 +107,7 @@ function renderEmployeesTable() {
                     <th>Full Name</th>
                     <th>Position</th>
                     <th>Salary</th>
+                    <th>Projects</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -84,6 +117,7 @@ function renderEmployeesTable() {
                         <td>${emp.firstName} ${emp.lastName}</td>
                         <td>${emp.position}</td>
                         <td>$${Number(emp.salary).toLocaleString()}</td>
+                        <td><button class="btn-small">Show Assignments (0)</button></td>
                         <td><span class="badge">${emp.status}</span></td>
                     </tr>
                 `).join('')}
@@ -116,7 +150,8 @@ function initFormValidation() {
             dob: formData.get('dob'),
             position: document.getElementById('position').value,
             salary: parseFloat(formData.get('salary')),
-            status: 'Active'
+            status: 'Active',
+            assignments: []
         };
         getCurrentMonthData().employees.push(newEmployee);
         saveState();
@@ -142,9 +177,10 @@ addEmployeeBtn.addEventListener('click', () => {
                 <label>Position</label>
                 <select id="position" required>
                     <option value="Junior">Junior</option><option value="Middle">Middle</option><option value="Senior">Senior</option>
+                    <option value="Lead">Lead</option><option value="Architect">Architect</option>
                 </select>
             </div>
-            <div class="form-group"><label>Salary</label><input type="number" name="salary" required min="1"></div>
+            <div class="form-group"><label>Salary</label><input type="number" name="salary" required min="1" step="0.01"></div>
             <div class="form-actions">
                 <button type="submit" id="submitEmployee" class="btn-primary" disabled>Submit</button>
                 <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
@@ -154,29 +190,53 @@ addEmployeeBtn.addEventListener('click', () => {
     initFormValidation();
 });
 
-// --- НОВИЙ БЛОК: Додавання Проєкту ---
+// Блок 6.1: Додавання Проєкту з повною валідацією
 const addProjectBtn = document.getElementById('openAddProject');
 if (addProjectBtn) {
     addProjectBtn.addEventListener('click', () => {
         const formHtml = `
             <h2>Add New Project</h2>
             <form id="projectForm">
-                <div class="form-group"><label>Project Name</label><input type="text" name="projectName" required minlength="3"></div>
-                <div class="form-group"><label>Monthly Budget ($)</label><input type="number" name="budget" required min="1"></div>
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="companyName" id="projCompany" required minlength="2">
+                </div>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" name="projectName" id="projName" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label>Monthly Budget ($)</label>
+                    <input type="number" name="budget" id="projBudget" required min="1" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Project Capacity (Employees needed)</label>
+                    <input type="number" name="projectCapacity" id="projCap" required min="1" step="1" value="1">
+                </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary">Create Project</button>
+                    <button type="submit" id="submitProject" class="btn-primary" disabled>Create Project</button>
                     <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
                 </div>
             </form>`;
+        
         openSidePanel(formHtml);
 
-        document.getElementById('projectForm').addEventListener('submit', (e) => {
+        const form = document.getElementById('projectForm');
+        const submitBtn = document.getElementById('submitProject');
+
+        form.addEventListener('input', () => {
+            submitBtn.disabled = !form.checkValidity();
+        });
+
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const newProject = {
                 id: Date.now(),
+                company: formData.get('companyName'),
                 name: formData.get('projectName'),
                 budget: parseFloat(formData.get('budget')),
+                projectCapacity: parseFloat(formData.get('projectCapacity')),
                 assignments: []
             };
             getCurrentMonthData().projects.push(newProject);
@@ -209,7 +269,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 8. Рендеринг таблиці проектів 
+// 7.1. Видалення проєкту
+window.deleteProject = function(id) {
+    const monthData = getCurrentMonthData();
+    const project = monthData.projects.find(p => p.id === id);
+    
+    if (confirm(`Are you sure you want to delete project "${project.name}"?`)) {
+        monthData.projects = monthData.projects.filter(p => p.id !== id);
+        saveState();
+        renderProjectsTable();
+    }
+};
+
+// 7.1. Видалення проєкту
+window.deleteProject = function(id) {
+    const monthData = getCurrentMonthData();
+    const project = monthData.projects.find(p => p.id === id);
+    
+    if (confirm(`Are you sure you want to delete project "${project.name}"?`)) {
+        monthData.projects = monthData.projects.filter(p => p.id !== id);
+        saveState();
+        renderProjectsTable();
+    }
+};
+
+// 8. Рендеринг таблиці проектів (Оновлено: додано кнопку видалення та запуск Assign)
 function renderProjectsTable() {
     const container = document.getElementById('projects-table-container');
     if (!container) return;
@@ -220,23 +304,55 @@ function renderProjectsTable() {
         return;
     }
 
+    let totalEstimatedIncome = 0;
+
+    const tableRows = projects.map(proj => {
+        const finances = calculateProjectFinances(proj);
+        totalEstimatedIncome += finances.profit;
+        
+        const profitColor = finances.profit >= 0 ? '#2ecc71' : '#e74c3c';
+        const capColor = finances.usedCapacity > proj.projectCapacity ? '#e67e22' : 'inherit';
+
+        return `
+            <tr>
+                <td>${proj.company || 'N/A'}</td>
+                <td><strong>${proj.name}</strong></td>
+                <td>$${proj.budget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td style="color: ${capColor}">
+                    ${finances.usedCapacity.toFixed(1)} / ${proj.projectCapacity || 0}
+                </td>
+                <td style="color: ${profitColor}; font-weight: bold;">
+                    $${finances.profit.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                </td>
+                <td>
+                    <button class="btn-small" onclick="openAssignModal(${proj.id})">Assign</button>
+                    
+                    <button class="btn-danger-small" onclick="deleteProject(${proj.id})" 
+                        style="margin-left: 5px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                        🗑️
+                    </button>
+                </td>
+            </tr>`;
+    }).join('');
+
     container.innerHTML = `
         <table class="data-table">
             <thead>
-                <tr><th>Project Name</th><th>Monthly Budget</th><th>Actual Costs</th><th>Profitability</th></tr>
+                <tr>
+                    <th>Company</th>
+                    <th>Project Name</th>
+                    <th>Budget</th>
+                    <th>Capacity (Used/Total)</th>
+                    <th>Est. Profit</th>
+                    <th>Actions</th>
+                </tr>
             </thead>
-            <tbody>
-                ${projects.map(proj => {
-                    const costs = 0; 
-                    const profit = proj.budget - costs;
-                    return `
-                        <tr>
-                            <td><strong>${proj.name}</strong></td>
-                            <td>$${proj.budget.toLocaleString()}</td>
-                            <td>$${costs}</td>
-                            <td style="color: ${profit >= 0 ? 'green' : 'red'}">$${profit.toLocaleString()}</td>
-                        </tr>`;
-                }).join('')}
-            </tbody>
-        </table>`;
+            <tbody>${tableRows}</tbody>
+        </table>
+        <div class="table-footer" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+            <strong>Total Estimated Income: <span style="color: ${totalEstimatedIncome >= 0 ? '#2ecc71' : '#e74c3c'}">
+                $${totalEstimatedIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}
+            </span></strong>
+        </div>
+    `;
 }
