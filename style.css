@@ -1,67 +1,253 @@
+/* --- 1. ГЛОБАЛЬНІ ЗМІННІ ТА СКИНУТТЯ --- */
 :root {
     --sidebar-width: 250px;
     --sidebar-collapsed: 60px;
     --bg-color: #f4f7f6;
     --primary: #3498db;
+    --primary-dark: #2980b9;
     --dark: #2c3e50;
+    --dark-light: #34495e;
+    --text-main: #2d3748;
+    --text-muted: #718096;
+    --white: #ffffff;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
 
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); }
+body { 
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    background: var(--bg-color); 
+    color: var(--text-main);
+    line-height: 1.5;
+    overflow-x: hidden;
+}
 
-.app-container { display: flex; min-height: 100vh; }
+/* --- 2. СТРУКТУРА ДОДАТКУ --- */
+.app-container { 
+    display: flex; 
+    flex-direction: row-reverse; /* САЙДБАР ТЕПЕР ПРАВОРУЧ */
+    min-height: 100vh; 
+}
 
+/* --- 3. САЙДБАР (SIDEBAR) ПРАВОРУЧ --- */
 .sidebar {
     width: var(--sidebar-width);
     background: var(--dark);
-    color: white;
-    transition: width 0.3s;
+    color: var(--white);
+    transition: var(--transition);
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    border-left: 1px solid rgba(255,255,255,0.05);
 }
 
-.sidebar.collapsed { width: var(--sidebar-collapsed); }
+.sidebar.collapsed { 
+    width: var(--sidebar-collapsed); 
+}
 
+.sidebar.collapsed .sidebar-content {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.sidebar-header {
+    padding: 20px;
+    display: flex;
+    justify-content: flex-start; /* Кнопка гамбургер тепер з внутрішнього краю */
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    outline: none;
+}
+
+.sidebar-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Селектори періоду */
+.period-selectors {
+    padding: 10px 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.period-selectors label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #95a5a6;
+    margin-bottom: 5px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#monthSelect, #yearSelect {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: var(--dark-light);
+    color: white !important;
+    border: 1px solid #455a64;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: auto;
+}
+
+/* Навігація - Акцент зміщено на правий край */
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+}
+
+.nav-link {
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #cbd5e0 !important;
+    text-decoration: none;
+    transition: var(--transition);
+    border-right: 4px solid transparent; /* Лінія тепер праворуч */
+    cursor: pointer;
+    font-weight: 500;
+    width: 100%;
+    text-align: left;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--white) !important;
+    border-right-color: var(--primary); /* Акцент на правому краї */
+}
+
+#seedDataBtn {
+    margin: auto 15px 20px;
+    padding: 12px;
+    background: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+/* --- 4. ОСНОВНИЙ КОНТЕНТ --- */
 .main-content {
     flex-grow: 1;
-    padding: 30px;
-    overflow-x: auto;
+    padding: 40px;
+    overflow-y: auto;
+    background: var(--bg-color);
 }
 
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
+/* --- 5. ТАБЛИЦІ --- */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--white);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.data-table th {
+    background-color: #f8f9fa;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 18px 15px;
+    text-align: left;
+    border-bottom: 2px solid #edf2f7;
+}
+
+.data-table td {
+    padding: 15px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+/* --- 6. КНОПКИ --- */
 .btn-primary {
     background: var(--primary);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
     cursor: pointer;
 }
 
-/* Side Panel (Slide-over) */
+.btn-small {
+    background: #ebf8ff;
+    color: #3182ce;
+    border: 1px solid #bee3f8;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.btn-danger-small {
+    background: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #feb2b2;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.table-footer {
+    margin-top: 25px;
+    padding: 20px;
+    background: var(--white);
+    border-radius: 10px;
+    border-right: 6px solid #48bb78; /* Смужка підсумку тепер праворуч */
+    box-shadow: var(--shadow);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* --- 7. БІЧНА ПАНЕЛЬ (ТЕПЕР ВИЇЖДЖАЄ ЗЛІВА) --- */
 .side-panel {
     position: fixed;
     top: 0;
-    right: -400px; /* Схована за межами екрана */
+    left: -450px; /* Схована зліва */
+    right: auto;
     width: 400px;
     height: 100vh;
-    background: white;
-    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-    transition: right 0.3s ease;
-    z-index: 1000;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
+    background: var(--white);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+    transition: left 0.4s cubic-bezier(0.05, 0.74, 0.2, 0.99);
+    z-index: 2000;
+    padding: 30px;
 }
 
 .side-panel.open {
-    right: 0; /* Виїжджає */
+    left: 0; /* Виїжджає вправо на екран */
 }
 
 .overlay {
@@ -70,24 +256,22 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); }
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
     display: none;
-    z-index: 999;
+    z-index: 1500;
 }
 
 .overlay.active {
     display: block;
 }
 
-/* Форма */
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+/* --- 8. ФОРМИ --- */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
 .form-group input, .form-group select {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
 }
-
-.error-message { color: red; font-size: 12px; margin-top: 5px; display: none; }
-input:invalid + .error-message { display: block; }
