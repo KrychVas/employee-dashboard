@@ -58,7 +58,7 @@ function closeSidePanel() {
     overlay.classList.remove('active');
 }
 
-// --- НОВИЙ БЛОК: ДОПОМІЖНІ РОЗРАХУНКИ (ВИМОГА RS SCHOOL) ---
+//  ДОПОМІЖНІ РОЗРАХУНКИ  ---
 function calculateEffectiveCapacity(assignment) {
     // Коефіцієнт відпусток поки 1 (реалізуємо з календарем), Fit за замовчуванням 1
     const vacationCoefficient = 1; 
@@ -291,6 +291,75 @@ window.deleteProject = function(id) {
         saveState();
         renderProjectsTable();
     }
+};
+
+/// 7.2. Вікно призначення співробітника на проєкт 
+window.openAssignModal = function(projectId) {
+    const { employees, projects } = getCurrentMonthData();
+    const project = projects.find(p => p.id === projectId);
+    
+    // Check: is there anyone to assign?
+    if (employees.length === 0) {
+        alert("Please add at least one employee in the Employees tab first!");
+        return;
+    }
+
+    const formHtml = `
+        <h2>Assign Employee to ${project.name}</h2>
+        <form id="assignForm">
+            <div class="form-group">
+                <label>Select Employee</label>
+                <select name="employeeId" required>
+                    <option value="" disabled selected>Choose an employee...</option>
+                    ${employees.map(emp => `<option value="${emp.id}">${emp.firstName} ${emp.lastName} (${emp.position})</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Capacity: <span id="capVal">0.5</span></label>
+                <input type="range" name="capacity" min="0.1" max="1.5" step="0.1" value="0.5" 
+                    oninput="document.getElementById('capVal').innerText = this.value">
+                <small>Workload from 0.1 to 1.5</small>
+            </div>
+            <div class="form-group">
+                <label>Project Fit: <span id="fitVal">1.0</span></label>
+                <input type="range" name="fit" min="0.1" max="1.0" step="0.1" value="1.0" 
+                    oninput="document.getElementById('fitVal').innerText = this.value">
+                <small>Skills match (0.1 - 1.0)</small>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Confirm Assignment</button>
+                <button type="button" class="btn-secondary" onclick="closeSidePanel()">Cancel</button>
+            </div>
+        </form>`;
+    
+    openSidePanel(formHtml);
+
+    // Handling assignment form submission
+    document.getElementById('assignForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const employeeId = parseInt(formData.get('employeeId'));
+        
+        const newAssignment = {
+            employeeId: employeeId,
+            capacity: parseFloat(formData.get('capacity')),
+            fit: parseFloat(formData.get('fit'))
+        };
+
+        // 1. Add assignment to the project object
+        project.assignments.push(newAssignment);
+        
+        // 2. Add reference to the employee object (for reporting)
+        const employee = employees.find(e => e.id === employeeId);
+        if (!employee.assignments) employee.assignments = [];
+        employee.assignments.push({ projectId: project.id, ...newAssignment });
+
+        // 3. Save state and update UI
+        saveState();
+        closeSidePanel();
+        renderProjectsTable();
+        renderEmployeesTable();
+    });
 };
 
 // 8. Рендеринг таблиці проектів (Оновлено: додано кнопку видалення та запуск Assign)
