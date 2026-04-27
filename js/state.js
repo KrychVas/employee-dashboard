@@ -3,6 +3,9 @@ const STORAGE_KEY = 'monthlyData';
 export const state = {
     currentYear: 2026,
     currentMonth: 3, // Квітень (0-indexed)
+    // Додаємо ці два поля для роботи сортування та фільтрів:
+    sortConfig: { key: null, direction: 'asc', table: null },
+    filters: {},
     data: loadFromStorage()
 };
 
@@ -30,9 +33,8 @@ export function getCurrentMonthData() {
     return state.data[key];
 }
 
-// НОВА ФУНКЦІЯ: Зміна періоду
+// Зміна періоду
 export function updatePeriod(year, month) {
     state.currentYear = parseInt(year);
     state.currentMonth = parseInt(month);
-    // Дані створяться автоматично при першому виклику getCurrentMonthData
 }
