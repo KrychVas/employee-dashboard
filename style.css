@@ -31,11 +31,11 @@ body {
 /* --- 2. СТРУКТУРА ДОДАТКУ --- */
 .app-container { 
     display: flex; 
-    flex-direction: row-reverse; /* САЙДБАР ТЕПЕР ПРАВОРУЧ */
+    flex-direction: row-reverse; /* САЙДБАР ПРАВОРУЧ */
     min-height: 100vh; 
 }
 
-/* --- 3. САЙДБАР (SIDEBAR) ПРАВОРУЧ --- */
+/* --- 3. САЙДБАР (SIDEBAR) --- */
 .sidebar {
     width: var(--sidebar-width);
     background: var(--dark);
@@ -45,6 +45,7 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 100;
+    position: relative;
     border-left: 1px solid rgba(255,255,255,0.05);
 }
 
@@ -52,19 +53,23 @@ body {
     width: var(--sidebar-collapsed); 
 }
 
-.sidebar.collapsed .sidebar-content {
+/* ПОВНЕ ПРИХОВУВАННЯ ВМІСТУ ПРИ ЗГОРТАННІ */
+.sidebar.collapsed .sidebar-content,
+.sidebar.collapsed .period-selectors,
+.sidebar.collapsed #seedDataBtn {
     display: none;
-}
-
-.sidebar.collapsed .sidebar-header {
-    justify-content: center;
-    padding: 20px 0;
 }
 
 .sidebar-header {
     padding: 20px;
     display: flex;
-    justify-content: flex-start; /* Кнопка гамбургер тепер з внутрішнього краю */
+    justify-content: flex-start; /* Кнопка гамбургер з краю контенту */
+    transition: var(--transition);
+}
+
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 20px 0;
 }
 
 .icon-btn {
@@ -81,6 +86,8 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Селектори періоду */
@@ -110,9 +117,11 @@ body {
     font-size: 14px;
     cursor: pointer;
     appearance: auto;
+    outline: none;
+    margin-bottom: 10px;
 }
 
-/* Навігація - Акцент зміщено на правий край */
+/* Навігація */
 .nav-menu {
     display: flex;
     flex-direction: column;
@@ -128,7 +137,7 @@ body {
     color: #cbd5e0 !important;
     text-decoration: none;
     transition: var(--transition);
-    border-right: 4px solid transparent; /* Лінія тепер праворуч */
+    border-right: 4px solid transparent; /* Лінія праворуч */
     cursor: pointer;
     font-weight: 500;
     width: 100%;
@@ -138,11 +147,11 @@ body {
 .nav-link:hover, .nav-link.active {
     background: rgba(255, 255, 255, 0.05);
     color: var(--white) !important;
-    border-right-color: var(--primary); /* Акцент на правому краї */
+    border-right-color: var(--primary);
 }
 
 #seedDataBtn {
-    margin: auto 15px 20px;
+    margin: auto 15px 20px; /* Притискає до низу */
     padding: 12px;
     background: #4a5568;
     color: white;
@@ -150,6 +159,11 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+#seedDataBtn:hover {
+    background: #2d3748;
 }
 
 /* --- 4. ОСНОВНИЙ КОНТЕНТ --- */
@@ -165,6 +179,12 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--dark);
 }
 
 /* --- 5. ТАБЛИЦІ --- */
@@ -191,6 +211,7 @@ body {
 .data-table td {
     padding: 15px;
     border-bottom: 1px solid #edf2f7;
+    font-size: 0.95rem;
 }
 
 /* --- 6. КНОПКИ --- */
@@ -210,6 +231,7 @@ body {
     border: 1px solid #bee3f8;
     padding: 6px 12px;
     border-radius: 4px;
+    cursor: pointer;
 }
 
 .btn-danger-small {
@@ -218,6 +240,7 @@ body {
     border: 1px solid #feb2b2;
     padding: 6px 12px;
     border-radius: 4px;
+    cursor: pointer;
 }
 
 .table-footer {
@@ -225,17 +248,18 @@ body {
     padding: 20px;
     background: var(--white);
     border-radius: 10px;
-    border-right: 6px solid #48bb78; /* Смужка підсумку тепер праворуч */
+    border-right: 6px solid #48bb78; /* Зелена смужка підсумку справа */
     box-shadow: var(--shadow);
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
-/* --- 7. БІЧНА ПАНЕЛЬ (ТЕПЕР ВИЇЖДЖАЄ ЗЛІВА) --- */
+/* --- 7. БІЧНА ПАНЕЛЬ (SIDE PANEL) - ВИЇЖДЖАЄ ЗЛІВА --- */
 .side-panel {
     position: fixed;
     top: 0;
-    left: -450px; /* Схована зліва */
+    left: -450px; /* Ховаємо зліва */
     right: auto;
     width: 400px;
     height: 100vh;
@@ -244,10 +268,11 @@ body {
     transition: left 0.4s cubic-bezier(0.05, 0.74, 0.2, 0.99);
     z-index: 2000;
     padding: 30px;
+    overflow-y: auto;
 }
 
 .side-panel.open {
-    left: 0; /* Виїжджає вправо на екран */
+    left: 0;
 }
 
 .overlay {
@@ -264,14 +289,4 @@ body {
 
 .overlay.active {
     display: block;
-}
-
-/* --- 8. ФОРМИ --- */
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
-.form-group input, .form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
 }
