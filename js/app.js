@@ -10,8 +10,9 @@ const toggleSidebar = document.getElementById('toggleSidebar');
 const sidebar = document.getElementById('sidebar');
 const sidePanel = document.getElementById('side-panel');
 const overlay = document.getElementById('overlay');
+const seedDataBtn = document.getElementById('seedDataBtn');
 
-// --- 1. ДОПОМІЖНІ ЛОГІЧНІ ФУНКЦІЇ ---
+// --- 1. ДОПОМІЖНІ ФУНКЦІЇ ---
 
 function calculateAge(dobString) {
     if (!dobString) return 0;
@@ -19,9 +20,7 @@ function calculateAge(dobString) {
     const birthDate = new Date(dobString);
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
 }
 
@@ -54,12 +53,9 @@ function calculateProjectFinances(project) {
 
 function calculateCompanyTotalIncome() {
     const { employees, projects } = getCurrentMonthData();
-    
-    let totalProjectsProfit = projects.reduce((sum, proj) => {
-        return sum + calculateProjectFinances(proj).profit;
-    }, 0);
-
+    let totalProjectsProfit = projects.reduce((sum, proj) => sum + calculateProjectFinances(proj).profit, 0);
     let totalBenchCost = 0;
+
     employees.forEach(emp => {
         const totalEmpLoad = projects.reduce((sum, proj) => {
             const assignment = proj.assignments.find(a => a.employeeId === emp.id);
@@ -67,15 +63,11 @@ function calculateCompanyTotalIncome() {
         }, 0);
 
         if (totalEmpLoad < 1.0) {
-            const benchPart = 1.0 - totalEmpLoad;
-            totalBenchCost += emp.salary * benchPart;
+            totalBenchCost += emp.salary * (1.0 - totalEmpLoad);
         }
     });
 
-    return {
-        finalIncome: totalProjectsProfit - totalBenchCost,
-        benchCost: totalBenchCost
-    };
+    return { finalIncome: totalProjectsProfit - totalBenchCost, benchCost: totalBenchCost };
 }
 
 // --- 2. РЕНДЕРИНГ ТАБЛИЦЬ ---
@@ -115,10 +107,9 @@ function renderEmployeesTable() {
                         <td>${calculateAge(emp.dob)}</td>
                         <td>${emp.position}</td>
                         <td>$${formatCurrency(emp.salary)}</td>
+                        <td><span class="btn-small">${empLoad.toFixed(1)} / 1.5</span></td>
                         <td>
-                            <span class="btn-small">${empLoad.toFixed(1)} / 1.5</span>
-                        </td>
-                        <td>
+                            <button class="btn-small" onclick="editEmployee(${emp.id})">Edit</button>
                             <button class="btn-danger-small" onclick="deleteEmployee(${emp.id})">Delete</button>
                         </td>
                     </tr>`;
@@ -143,15 +134,13 @@ function renderProjectsTable() {
 
     const tableRows = projects.map(proj => {
         const finances = calculateProjectFinances(proj);
-        const profitColor = finances.profit >= 0 ? '#27ae60' : '#e74c3c';
-
         return `
             <tr>
                 <td>${proj.company}</td>
                 <td><strong>${proj.name}</strong></td>
                 <td>$${formatCurrency(proj.budget)}</td>
                 <td>${finances.usedCapacity.toFixed(1)} / ${proj.projectCapacity}</td>
-                <td style="color: ${profitColor}; font-weight: bold;">
+                <td style="color: ${finances.profit >= 0 ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
                     $${formatCurrency(finances.profit)}
                 </td>
                 <td>
@@ -168,25 +157,14 @@ function renderProjectsTable() {
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Company Name</th>
-                    <th>Project Name</th>
-                    <th>Budget</th>
-                    <th>Capacity</th>
-                    <th>Income</th>
-                    <th>Actions</th>
+                    <th>Company</th><th>Project</th><th>Budget</th><th>Capacity</th><th>Income</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>${tableRows}</tbody>
         </table>
         <div class="table-footer">
-            <strong>Total Monthly Income: 
-                <span style="color: ${finalIncome >= 0 ? '#27ae60' : '#e74c3c'}">
-                    $${formatCurrency(finalIncome)}
-                </span>
-            </strong>
-            <span style="margin-left: 10px; font-size: 0.9rem; color: #718096;">
-                (Bench payments: $${formatCurrency(benchCost)})
-            </span>
+            <strong>Total Monthly Income: <span style="color: ${finalIncome >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(finalIncome)}</span></strong>
+            <span style="font-size: 0.9rem; color: #718096;">(Bench: $${formatCurrency(benchCost)})</span>
         </div>
     `;
 }
@@ -199,174 +177,51 @@ function openSidePanel(contentHtml) {
     overlay.classList.add('active');
 }
 
-function closeSidePanel() {
+window.closeSidePanel = function() {
     sidePanel.classList.remove('open');
     overlay.classList.remove('active');
-}
+};
 
-window.openAssignModal = function(projectId) {
-    const { employees, projects } = getCurrentMonthData();
-    const project = projects.find(p => p.id === projectId);
+// --- 4. ГЛОБАЛЬНІ ФУНКЦІЇ (ACTIONS) ---
+
+window.editEmployee = function(id) {
+    const { employees } = getCurrentMonthData();
+    const emp = employees.find(e => e.id === id);
     
-    if (employees.length === 0) {
-        alert("Add an employee first!");
-        return;
-    }
-
     const formHtml = `
-        <h3>Assign Employee</h3>
-        <form id="assignForm">
+        <h3>Edit Employee</h3>
+        <form id="editEmployeeForm">
+            <div class="form-group"><label>First Name</label><input type="text" name="firstName" value="${emp.firstName}" required></div>
+            <div class="form-group"><label>Last Name</label><input type="text" name="lastName" value="${emp.lastName}" required></div>
+            <div class="form-group"><label>Birth Date</label><input type="date" name="dob" value="${emp.dob}" required></div>
+            <div class="form-group"><label>Monthly Salary</label><input type="number" name="salary" value="${emp.salary}" required></div>
             <div class="form-group">
-                <label>Employee</label>
-                <select name="employeeId" required>
-                    <option value="" disabled selected>Select...</option>
-                    ${employees.map(emp => `<option value="${emp.id}">${emp.firstName} ${emp.lastName}</option>`).join('')}
+                <label>Position</label>
+                <select name="position">
+                    <option ${emp.position === 'Junior' ? 'selected' : ''}>Junior</option>
+                    <option ${emp.position === 'Middle' ? 'selected' : ''}>Middle</option>
+                    <option ${emp.position === 'Senior' ? 'selected' : ''}>Senior</option>
+                    <option ${emp.position === 'Lead' ? 'selected' : ''}>Lead</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Capacity: <span id="capVal">0.5</span></label>
-                <input type="range" name="capacity" min="0.1" max="1.5" step="0.1" value="0.5" 
-                       oninput="document.getElementById('capVal').innerText = this.value">
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">Confirm</button>
-                <button type="button" class="btn-small" onclick="closeSidePanel()">Cancel</button>
-            </div>
+            <button type="submit" class="btn-primary">Update</button>
         </form>`;
     
     openSidePanel(formHtml);
-
-    document.getElementById('assignForm').addEventListener('submit', (e) => {
+    document.getElementById('editEmployeeForm').onsubmit = (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        project.assignments.push({
-            employeeId: parseInt(formData.get('employeeId')),
-            capacity: parseFloat(formData.get('capacity'))
+        const fd = new FormData(e.target);
+        Object.assign(emp, {
+            firstName: fd.get('firstName'),
+            lastName: fd.get('lastName'),
+            dob: fd.get('dob'),
+            salary: parseFloat(fd.get('salary')),
+            position: fd.get('position')
         });
-        saveState();
-        closeSidePanel();
-        renderProjectsTable();
-        renderEmployeesTable();
-    });
+        saveState(); window.closeSidePanel(); renderEmployeesTable(); renderProjectsTable();
+    };
 };
 
-// --- 4. ІНІЦІАЛІЗАЦІЯ ---
-
-function initSelectors() {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    monthSelect.innerHTML = '';
-    months.forEach((m, i) => {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = m;
-        if (i === state.currentMonth) opt.selected = true;
-        monthSelect.appendChild(opt);
-    });
-
-    yearSelect.innerHTML = '';
-    [2024, 2025, 2026, 2027].forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y;
-        if (y === state.currentYear) opt.selected = true;
-        yearSelect.appendChild(opt);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initSelectors();
-
-    // Перемикання табів
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            const target = link.getAttribute('data-tab');
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-            pages.forEach(p => p.style.display = p.id === `${target}-page` ? 'block' : 'none');
-        });
-    });
-
-    renderEmployeesTable();
-    renderProjectsTable();
-
-    // Додавання Співробітника
-    document.getElementById('openAddEmployee').addEventListener('click', () => {
-        const formHtml = `
-            <h3>New Employee</h3>
-            <form id="employeeForm">
-                <div class="form-group"><label>First Name</label><input type="text" name="firstName" required></div>
-                <div class="form-group"><label>Last Name</label><input type="text" name="lastName" required></div>
-                <div class="form-group"><label>Birth Date</label><input type="date" name="dob" required></div>
-                <div class="form-group"><label>Monthly Salary</label><input type="number" name="salary" required></div>
-                <div class="form-group">
-                    <label>Position</label>
-                    <select name="position">
-                        <option>Junior</option><option>Middle</option><option>Senior</option><option>Lead</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-primary">Save Employee</button>
-            </form>`;
-        openSidePanel(formHtml);
-        document.getElementById('employeeForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const fd = new FormData(e.target);
-            getCurrentMonthData().employees.push({
-                id: Date.now(),
-                firstName: fd.get('firstName'),
-                lastName: fd.get('lastName'),
-                dob: fd.get('dob'),
-                salary: parseFloat(fd.get('salary')),
-                position: fd.get('position')
-            });
-            saveState(); closeSidePanel(); renderEmployeesTable();
-        });
-    });
-
-    // Додавання Проєкту
-    document.getElementById('openAddProject').addEventListener('click', () => {
-        const formHtml = `
-            <h3>New Project</h3>
-            <form id="projectForm">
-                <div class="form-group"><label>Company</label><input type="text" name="company" required></div>
-                <div class="form-group"><label>Project Name</label><input type="text" name="name" required></div>
-                <div class="form-group"><label>Monthly Budget</label><input type="number" name="budget" required></div>
-                <div class="form-group"><label>Required Capacity</label><input type="number" name="projectCapacity" value="1" step="0.1" required></div>
-                <button type="submit" class="btn-primary">Create Project</button>
-            </form>`;
-        openSidePanel(formHtml);
-        document.getElementById('projectForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const fd = new FormData(e.target);
-            getCurrentMonthData().projects.push({
-                id: Date.now(),
-                company: fd.get('company'),
-                name: fd.get('name'),
-                budget: parseFloat(fd.get('budget')),
-                projectCapacity: parseFloat(fd.get('projectCapacity')),
-                assignments: []
-            });
-            saveState(); closeSidePanel(); renderProjectsTable();
-        });
-    });
-
-    monthSelect.addEventListener('change', (e) => { 
-        state.currentMonth = parseInt(e.target.value); 
-        renderEmployeesTable(); 
-        renderProjectsTable(); 
-    });
-    
-    yearSelect.addEventListener('change', (e) => { 
-        state.currentYear = parseInt(e.target.value); 
-        renderEmployeesTable(); 
-        renderProjectsTable(); 
-    });
-    
-    toggleSidebar.onclick = () => sidebar.classList.toggle('collapsed');
-    overlay.onclick = closeSidePanel;
-});
-
-// Глобальні функції для HTML
 window.deleteEmployee = (id) => {
     if(!confirm("Delete employee?")) return;
     const data = getCurrentMonthData();
@@ -382,4 +237,95 @@ window.deleteProject = (id) => {
     saveState(); renderProjectsTable();
 };
 
-window.closeSidePanel = closeSidePanel;
+window.openAssignModal = function(projectId) {
+    const { employees, projects } = getCurrentMonthData();
+    const project = projects.find(p => p.id === projectId);
+    
+    const formHtml = `
+        <h3>Assign Employee</h3>
+        <form id="assignForm">
+            <div class="form-group">
+                <label>Employee</label>
+                <select name="employeeId" required>
+                    ${employees.map(emp => `<option value="${emp.id}">${emp.firstName} ${emp.lastName}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Capacity: <span id="capVal">0.5</span></label>
+                <input type="range" name="capacity" min="0.1" max="1.5" step="0.1" value="0.5" oninput="document.getElementById('capVal').innerText = this.value">
+            </div>
+            <button type="submit" class="btn-primary">Confirm</button>
+        </form>`;
+    
+    openSidePanel(formHtml);
+    document.getElementById('assignForm').onsubmit = (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        project.assignments.push({ employeeId: parseInt(fd.get('employeeId')), capacity: parseFloat(fd.get('capacity')) });
+        saveState(); window.closeSidePanel(); renderProjectsTable(); renderEmployeesTable();
+    };
+};
+
+// --- 5. ІНІЦІАЛІЗАЦІЯ ТА ПОДІЇ ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Селектори дати
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    monthSelect.innerHTML = months.map((m, i) => `<option value="${i}" ${i === state.currentMonth ? 'selected' : ''}>${m}</option>`).join('');
+    yearSelect.innerHTML = [2024, 2025, 2026, 2027].map(y => `<option value="${y}" ${y === state.currentYear ? 'selected' : ''}>${y}</option>`).join('');
+
+    monthSelect.onchange = (e) => { state.currentMonth = parseInt(e.target.value); renderEmployeesTable(); renderProjectsTable(); };
+    yearSelect.onchange = (e) => { state.currentYear = parseInt(e.target.value); renderEmployeesTable(); renderProjectsTable(); };
+
+    // Таби
+    navLinks.forEach(link => {
+        link.onclick = () => {
+            const target = link.getAttribute('data-tab');
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            pages.forEach(p => p.style.display = p.id === `${target}-page` ? 'block' : 'none');
+        };
+    });
+
+    // Sidebar Toggle
+    toggleSidebar.onclick = () => {
+        sidebar.classList.toggle('collapsed');
+        toggleSidebar.textContent = sidebar.classList.contains('collapsed') ? '←' : '☰';
+    };
+
+    // Seed Data
+    seedDataBtn.onclick = () => {
+        const data = getCurrentMonthData();
+        data.employees.push(
+            { id: Date.now(), firstName: "Вася", lastName: "Крич", dob: "1990-05-15", salary: 1000, position: "Junior" },
+            { id: Date.now()+1, firstName: "Давід", lastName: "Ров", dob: "1995-10-20", salary: 2000, position: "Middle" }
+        );
+        data.projects.push({ id: Date.now()+2, company: "Барбер", name: "Bas", budget: 10000, projectCapacity: 3, assignments: [] });
+        saveState(); renderEmployeesTable(); renderProjectsTable();
+    };
+
+    // Add Buttons
+    document.getElementById('openAddEmployee').onclick = () => {
+        const formHtml = `<h3>New Employee</h3><form id="empF"><div class="form-group"><label>First Name</label><input type="text" name="fN" required></div><div class="form-group"><label>Last Name</label><input type="text" name="lN" required></div><div class="form-group"><label>Date</label><input type="date" name="d" required></div><div class="form-group"><label>Salary</label><input type="number" name="s" required></div><button type="submit" class="btn-primary">Save</button></form>`;
+        openSidePanel(formHtml);
+        document.getElementById('empF').onsubmit = (e) => {
+            e.preventDefault(); const fd = new FormData(e.target);
+            getCurrentMonthData().employees.push({ id: Date.now(), firstName: fd.get('fN'), lastName: fd.get('lN'), dob: fd.get('d'), salary: parseFloat(fd.get('s')), position: 'Junior' });
+            saveState(); window.closeSidePanel(); renderEmployeesTable();
+        };
+    };
+
+    document.getElementById('openAddProject').onclick = () => {
+        const formHtml = `<h3>New Project</h3><form id="prjF"><div class="form-group"><label>Company</label><input type="text" name="c" required></div><div class="form-group"><label>Name</label><input type="text" name="n" required></div><div class="form-group"><label>Budget</label><input type="number" name="b" required></div><button type="submit" class="btn-primary">Create</button></form>`;
+        openSidePanel(formHtml);
+        document.getElementById('prjF').onsubmit = (e) => {
+            e.preventDefault(); const fd = new FormData(e.target);
+            getCurrentMonthData().projects.push({ id: Date.now(), company: fd.get('c'), name: fd.get('n'), budget: parseFloat(fd.get('b')), projectCapacity: 1, assignments: [] });
+            saveState(); window.closeSidePanel(); renderProjectsTable();
+        };
+    };
+
+    overlay.onclick = window.closeSidePanel;
+    renderEmployeesTable();
+    renderProjectsTable();
+});
