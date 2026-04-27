@@ -31,7 +31,26 @@ function formatCurrency(amount) {
     }).replace(',', '.');
 }
 
-// Нова логіка розрахунку фінансів проекту (Requirement 5)
+// Перетворення списку днів у діапазони (напр. 01-05, 10)
+function formatVacationPeriods(days) {
+    if (!days || days.length === 0) return '—';
+    const sorted = [...days].sort((a, b) => a - b);
+    const periods = [];
+    let start = sorted[0];
+    let end = start;
+
+    for (let i = 1; i <= sorted.length; i++) {
+        if (sorted[i] === end + 1) {
+            end = sorted[i];
+        } else {
+            periods.push(start === end ? `${String(start).padStart(2, '0')}` : `${String(start).padStart(2, '0')}-${String(end).padStart(2, '0')}`);
+            start = sorted[i];
+            end = start;
+        }
+    }
+    return periods.join(', ');
+}
+
 function calculateProjectFinances(project) {
     const { employees } = getCurrentMonthData();
     let totalUsedEffectiveCapacity = 0;
@@ -70,7 +89,6 @@ function calculateCompanyTotalIncome() {
             return sum + (a ? a.capacity : 0);
         }, 0);
 
-        // Якщо завантаження менше 0.5, доплачуємо до 0.5 (Requirement 5.2)
         if (totalLoad < 0.5) {
             totalBenchCost += emp.salary * (0.5 - totalLoad);
         }
@@ -95,7 +113,7 @@ function renderEmployeesTable() {
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Name</th><th>Age</th><th>Position</th><th>Salary</th><th>Assignments</th><th>Actions</th>
+                    <th>Name / Vacation</th><th>Age</th><th>Position</th><th>Salary</th><th>Load</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -107,13 +125,17 @@ function renderEmployeesTable() {
 
                     return `
                     <tr>
-                        <td><strong>${emp.firstName} ${emp.lastName}</strong></td>
+                        <td>
+                            <strong>${emp.firstName} ${emp.lastName}</strong>
+                            <div style="font-size: 0.75rem; color: #718096;">📅 ${formatVacationPeriods(emp.vacationDays)}</div>
+                        </td>
                         <td>${calculateAge(emp.dob)}</td>
                         <td>${emp.position}</td>
                         <td>$${formatCurrency(emp.salary)}</td>
                         <td><span class="btn-small">${empLoad.toFixed(1)} / 1.5</span></td>
                         <td>
                             <button class="btn-small" onclick="openAvailabilityCalendar(${emp.id})">📅 Vacation</button>
+                            <button class="btn-small" onclick="openAssignModal(${emp.id})">🔗 Assign</button>
                             <button class="btn-small" onclick="editEmployee(${emp.id})">Edit</button>
                             <button class="btn-danger-small" onclick="deleteEmployee(${emp.id})">Delete</button>
                         </td>
@@ -149,7 +171,6 @@ function renderProjectsTable() {
                     $${formatCurrency(finances.profit)}
                 </td>
                 <td>
-                    <button class="btn-small" onclick="openAssignModal(${proj.id})">Assign</button>
                     <button class="btn-danger-small" onclick="deleteProject(${proj.id})">Delete</button>
                 </td>
             </tr>`;
@@ -193,20 +214,18 @@ window.openAvailabilityCalendar = function(employeeId) {
     const { employees } = getCurrentMonthData();
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
-    
     if (!emp.vacationDays) emp.vacationDays = [];
 
     const year = state.currentYear;
     const month = state.currentMonth;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDayIndex = new Date(year, month, 1).getDay();
-    
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     let calendarHtml = `
         <div class="calendar-container">
-            <h3>Vacation: ${emp.firstName} ${emp.lastName}</h3>
+            <h3>Vacation: ${emp.firstName}</h3>
             <p>${monthNames[month]} ${year}</p>
             <div class="calendar-grid">
                 ${daysOfWeek.map(d => `<div class="day-name">${d}</div>`).join('')}
@@ -220,9 +239,8 @@ window.openAvailabilityCalendar = function(employeeId) {
                                  onclick="toggleVacationDay(${emp.id}, ${day}, this)">${day}</div>`;
                 }).join('')}
             </div>
-            <button class="btn-primary" style="width:100%" onclick="closeSidePanel()">Save & Close</button>
+            <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="closeSidePanel()">Close</button>
         </div>`;
-    
     openSidePanel(calendarHtml);
 };
 
@@ -230,46 +248,82 @@ window.toggleVacationDay = function(empId, day, element) {
     const { employees } = getCurrentMonthData();
     const emp = employees.find(e => e.id === empId);
     const index = emp.vacationDays.indexOf(day);
-    
     if (index === -1) emp.vacationDays.push(day);
     else emp.vacationDays.splice(index, 1);
-    
     element.classList.toggle('selected');
     saveState();
     renderEmployeesTable();
     renderProjectsTable();
 };
 
+window.openAssignModal = function(employeeId) {
+    const { employees, projects } = getCurrentMonthData();
+    const emp = employees.find(e => e.id === employeeId);
+    const currentLoad = projects.reduce((sum, p) => {
+        const a = p.assignments.find(as => as.employeeId === emp.id);
+        return sum + (a ? a.capacity : 0);
+    }, 0);
+
+    const availableForEmp = Math.max(0, (1.5 - currentLoad)).toFixed(1);
+
+    const formHtml = `
+        <div class="assign-wrapper">
+            <h3>Assign ${emp.firstName}</h3>
+            <div class="info-box" style="background: #ebf8ff; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #3182ce;">
+                <p><strong>Load:</strong> ${currentLoad.toFixed(1)} / 1.5</p>
+                <p style="color: #27ae60;"><strong>Available:</strong> ${availableForEmp}</p>
+            </div>
+            <form id="assignForm">
+                <div class="form-group">
+                    <label>Select Project:</label>
+                    <select name="projectId" required style="width: 100%; padding: 10px; border-radius: 6px;">
+                        ${projects.map(proj => {
+                            const finances = calculateProjectFinances(proj);
+                            const free = (proj.projectCapacity - finances.usedCapacity).toFixed(1);
+                            return `<option value="${proj.id}">${proj.name} (Free: ${free})</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top:15px;">
+                    <label>Capacity: <span id="capVal">0.5</span></label>
+                    <input type="range" name="capacity" min="0.1" max="${availableForEmp}" step="0.1" value="${Math.min(0.5, availableForEmp)}" 
+                           style="width: 100%;" oninput="document.getElementById('capVal').innerText = this.value">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">Confirm</button>
+            </form>
+        </div>`;
+    
+    openSidePanel(formHtml);
+    document.getElementById('assignForm').onsubmit = (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const project = projects.find(p => p.id === parseInt(fd.get('projectId')));
+        if (project) {
+            project.assignments.push({ employeeId: emp.id, capacity: parseFloat(fd.get('capacity')) });
+            saveState(); window.closeSidePanel(); renderEmployeesTable(); renderProjectsTable();
+        }
+    };
+};
+
 window.editEmployee = function(id) {
     const { employees } = getCurrentMonthData();
     const emp = employees.find(e => e.id === id);
-    
     const formHtml = `
         <h3>Edit Employee</h3>
         <form id="editEmployeeForm">
             <div class="form-group"><label>First Name</label><input type="text" name="firstName" value="${emp.firstName}" required></div>
             <div class="form-group"><label>Last Name</label><input type="text" name="lastName" value="${emp.lastName}" required></div>
             <div class="form-group"><label>Birth Date</label><input type="date" name="dob" value="${emp.dob}" required></div>
-            <div class="form-group"><label>Monthly Salary</label><input type="number" name="salary" value="${emp.salary}" required></div>
-            <div class="form-group">
-                <label>Position</label>
-                <select name="position">
-                    <option ${emp.position === 'Junior' ? 'selected' : ''}>Junior</option>
-                    <option ${emp.position === 'Middle' ? 'selected' : ''}>Middle</option>
-                    <option ${emp.position === 'Senior' ? 'selected' : ''}>Senior</option>
-                    <option ${emp.position === 'Lead' ? 'selected' : ''}>Lead</option>
-                </select>
-            </div>
-            <button type="submit" class="btn-primary">Update</button>
+            <div class="form-group"><label>Salary</label><input type="number" name="salary" value="${emp.salary}" required></div>
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:15px;">Update</button>
         </form>`;
-    
     openSidePanel(formHtml);
     document.getElementById('editEmployeeForm').onsubmit = (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
         Object.assign(emp, {
             firstName: fd.get('firstName'), lastName: fd.get('lastName'),
-            dob: fd.get('dob'), salary: parseFloat(fd.get('salary')), position: fd.get('position')
+            dob: fd.get('dob'), salary: parseFloat(fd.get('salary'))
         });
         saveState(); window.closeSidePanel(); renderEmployeesTable(); renderProjectsTable();
     };
@@ -287,36 +341,7 @@ window.deleteProject = (id) => {
     if(!confirm("Delete project?")) return;
     const data = getCurrentMonthData();
     data.projects = data.projects.filter(p => p.id !== id);
-    saveState(); renderProjectsTable();
-};
-
-window.openAssignModal = function(projectId) {
-    const { employees, projects } = getCurrentMonthData();
-    const project = projects.find(p => p.id === projectId);
-    
-    const formHtml = `
-        <h3>Assign Employee</h3>
-        <form id="assignForm">
-            <div class="form-group">
-                <label>Employee</label>
-                <select name="employeeId" required>
-                    ${employees.map(emp => `<option value="${emp.id}">${emp.firstName} ${emp.lastName}</option>`).join('')}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Capacity: <span id="capVal">0.5</span></label>
-                <input type="range" name="capacity" min="0.1" max="1.5" step="0.1" value="0.5" oninput="document.getElementById('capVal').innerText = this.value">
-            </div>
-            <button type="submit" class="btn-primary">Confirm</button>
-        </form>`;
-    
-    openSidePanel(formHtml);
-    document.getElementById('assignForm').onsubmit = (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        project.assignments.push({ employeeId: parseInt(fd.get('employeeId')), capacity: parseFloat(fd.get('capacity')) });
-        saveState(); window.closeSidePanel(); renderProjectsTable(); renderEmployeesTable();
-    };
+    saveState(); renderProjectsTable(); renderEmployeesTable();
 };
 
 // --- 5. ІНІЦІАЛІЗАЦІЯ ---
@@ -354,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('openAddEmployee').onclick = () => {
-        const formHtml = `<h3>New Employee</h3><form id="empF"><div class="form-group"><label>First Name</label><input type="text" name="fN" required></div><div class="form-group"><label>Last Name</label><input type="text" name="lN" required></div><div class="form-group"><label>Date</label><input type="date" name="d" required></div><div class="form-group"><label>Salary</label><input type="number" name="s" required></div><button type="submit" class="btn-primary">Save</button></form>`;
+        const formHtml = `<h3>New Employee</h3><form id="empF"><div class="form-group"><label>First Name</label><input type="text" name="fN" required></div><div class="form-group"><label>Last Name</label><input type="text" name="lN" required></div><div class="form-group"><label>Date</label><input type="date" name="d" required></div><div class="form-group"><label>Salary</label><input type="number" name="s" required></div><button type="submit" class="btn-primary" style="width:100%; margin-top:15px;">Save</button></form>`;
         openSidePanel(formHtml);
         document.getElementById('empF').onsubmit = (e) => {
             e.preventDefault(); const fd = new FormData(e.target);
@@ -364,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('openAddProject').onclick = () => {
-        const formHtml = `<h3>New Project</h3><form id="prjF"><div class="form-group"><label>Company</label><input type="text" name="c" required></div><div class="form-group"><label>Name</label><input type="text" name="n" required></div><div class="form-group"><label>Budget</label><input type="number" name="b" required></div><div class="form-group"><label>Target Cap</label><input type="number" name="tc" value="1" step="0.1"></div><button type="submit" class="btn-primary">Create</button></form>`;
+        const formHtml = `<h3>New Project</h3><form id="prjF"><div class="form-group"><label>Company</label><input type="text" name="c" required></div><div class="form-group"><label>Name</label><input type="text" name="n" required></div><div class="form-group"><label>Budget</label><input type="number" name="b" required></div><div class="form-group"><label>Target Cap</label><input type="number" name="tc" value="1" step="0.1"></div><button type="submit" class="btn-primary" style="width:100%; margin-top:15px;">Create</button></form>`;
         openSidePanel(formHtml);
         document.getElementById('prjF').onsubmit = (e) => {
             e.preventDefault(); const fd = new FormData(e.target);
