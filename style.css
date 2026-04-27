@@ -290,3 +290,101 @@ body {
 .overlay.active {
     display: block;
 }
+
+/* --- 8. КАЛЕНДАР ВІДПУСТОК --- */
+
+.calendar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.calendar-container h3 {
+    color: var(--dark);
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* Створюємо 7 однакових колонок */
+    gap: 8px;
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #edf2f7;
+}
+
+.day-name {
+    font-weight: bold;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    text-align: center;
+    padding-bottom: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1 / 1; /* Робить клітинку ідеально квадратною */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: var(--white);
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    transition: var(--transition);
+    user-select: none; /* Щоб текст не виділявся при частих кліках */
+}
+
+.calendar-day:hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Стиль для вихідних */
+.calendar-day.weekend {
+    background: #fff5f5;
+    color: #e53e3e;
+    border-color: #fed7d7;
+}
+
+/* Стиль для вибраного дня відпустки */
+.calendar-day.selected {
+    background: var(--primary) !important;
+    color: var(--white) !important;
+    border-color: var(--primary-dark);
+    font-weight: bold;
+}
+
+/* Порожні клітинки на початку місяця */
+.empty {
+    visibility: hidden;
+}
+
+/* Форми всередині Side Panel */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    outline: none;
+}
+
+.form-group input:focus {
+    border-color: var(--primary);
+}
