@@ -31,7 +31,6 @@ function formatCurrency(amount) {
     }).replace(',', '.');
 }
 
-// Перетворення списку днів у діапазони (напр. 01-05, 10)
 function formatVacationPeriods(days) {
     if (!days || days.length === 0) return '—';
     const sorted = [...days].sort((a, b) => a - b);
@@ -171,6 +170,7 @@ function renderProjectsTable() {
                     $${formatCurrency(finances.profit)}
                 </td>
                 <td>
+                    <button class="btn-small-edit" onclick="editProject(${proj.id})">Edit</button>
                     <button class="btn-danger-small" onclick="deleteProject(${proj.id})">Delete</button>
                 </td>
             </tr>`;
@@ -326,6 +326,36 @@ window.editEmployee = function(id) {
             dob: fd.get('dob'), salary: parseFloat(fd.get('salary'))
         });
         saveState(); window.closeSidePanel(); renderEmployeesTable(); renderProjectsTable();
+    };
+};
+
+window.editProject = function(id) {
+    const { projects } = getCurrentMonthData();
+    const proj = projects.find(p => p.id === id);
+    if (!proj) return;
+    
+    const formHtml = `
+        <h3>Edit Project</h3>
+        <form id="editProjectForm">
+            <div class="form-group"><label>Company Name</label><input type="text" name="company" value="${proj.company}" required></div>
+            <div class="form-group"><label>Project Name</label><input type="text" name="name" value="${proj.name}" required></div>
+            <div class="form-group"><label>Budget ($)</label><input type="number" name="budget" value="${proj.budget}" required min="1"></div>
+            <div class="form-group"><label>Target Capacity</label><input type="number" name="projectCapacity" value="${proj.projectCapacity}" required step="0.1" min="0.1"></div>
+            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">Update Project</button>
+        </form>`;
+    
+    openSidePanel(formHtml);
+
+    document.getElementById('editProjectForm').onsubmit = (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        Object.assign(proj, {
+            company: fd.get('company'),
+            name: fd.get('name'),
+            budget: parseFloat(fd.get('budget')),
+            projectCapacity: parseFloat(fd.get('projectCapacity'))
+        });
+        saveState(); window.closeSidePanel(); renderProjectsTable();
     };
 };
 

@@ -388,3 +388,19 @@ body {
 .form-group input:focus {
     border-color: var(--primary);
 }
+
+/* --- 9. ДОДАТКОВІ ЕЛЕМЕНТИ УПРАВЛІННЯ (EDIT BUTTONS) --- */
+.btn-small-edit {
+    background: #ebf8ff;
+    color: #3182ce;
+    border: 1px solid #bee3f8;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: var(--transition);
+}
+
+.btn-small-edit:hover {
+    background: #bee3f8;
+}
