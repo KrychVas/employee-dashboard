@@ -404,3 +404,89 @@ body {
 .btn-small-edit:hover {
     background: #bee3f8;
 }
+
+/* --- 10. СТИЛІ ДЛЯ СОРТУВАННЯ ТА ФІЛЬТРАЦІЇ --- */
+
+/* Іконки сортування та пошуку в заголовках */
+.data-table th {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.data-table th:hover {
+    background-color: #edf2f7;
+}
+
+.data-table th span {
+    font-size: 0.7rem;
+    margin-left: 8px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.data-table th:hover span {
+    opacity: 1;
+    color: var(--primary);
+}
+
+/* Чіпи активних фільтрів */
+.filter-chips {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.chip {
+    background: #edf2f7;
+    color: var(--dark-light);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    border: 1px solid #cbd5e0;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.chip b {
+    color: #e53e3e;
+    margin-left: 8px;
+    cursor: pointer;
+    display: inline-block;
+    padding: 0 4px;
+    transition: transform 0.2s;
+}
+
+.chip b:hover {
+    transform: scale(1.2);
+}
+
+/* Кнопка швидкого очищення */
+.btn-danger-small {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+/* Поля вводу у Side Panel (загальні для всіх форм) */
+#side-panel input, 
+#side-panel select {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: block;
+}
+
+/* Стиль для неактивної кнопки Assign (якщо Load >= 1.5) */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
