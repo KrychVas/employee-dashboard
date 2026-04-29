@@ -143,9 +143,10 @@ body {
     color: #4299e1 !important; 
     font-weight: 600;
     
-    /* Смужка зліва завжди синя */
-    border-left: 4px solid #3182ce; 
+/* Смужка за замовчуванням ПРОЗОРА */
+    border-left: 4px solid transparent; 
     background: transparent;
+    text-decoration: none;
 }
 
 /* Ефект при наведенні  */
