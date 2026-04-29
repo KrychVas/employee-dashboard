@@ -128,26 +128,60 @@ body {
     margin-top: 10px;
 }
 
+/* ---  НАВІГАЦІЯ --- */
+
+/* Базовий стиль */
 .nav-link {
-    background: transparent;
-    border: none;
+    position: relative;
+    padding: 12px 20px;
     display: flex;
     align-items: center;
-    padding: 15px 20px;
-    color: #cbd5e0 !important;
-    text-decoration: none;
-    transition: var(--transition);
-    border-right: 4px solid transparent; /* Лінія праворуч */
     cursor: pointer;
-    font-weight: 500;
-    width: 100%;
-    text-align: left;
+    transition: all 0.2s ease;
+    
+    /* Текст завжди синій */
+    color: #4299e1 !important; 
+    font-weight: 600;
+    
+    /* Смужка зліва завжди синя */
+    border-left: 4px solid #3182ce; 
+    background: transparent;
 }
 
-.nav-link:hover, .nav-link.active {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--white) !important;
-    border-right-color: var(--primary);
+/* Ефект при наведенні  */
+.nav-link:hover {
+    background: rgba(66, 153, 225, 0.15); 
+    color: #2b6cb0 !important; 
+}
+
+/* Стан active */
+.nav-link.active {
+    background: rgba(66, 153, 225, 0.08);
+    color: #4299e1 !important;
+    border-left: 4px solid #3182ce;
+}
+
+/*  Згорнутий стану  */
+.sidebar.collapsed .nav-link {
+    padding-left: 0;
+    justify-content: center;
+    border-left-width: 4px;
+}
+
+/* Стиль кнопки-стрілки */
+.sidebar-header .icon-btn {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4299e1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-header .icon-btn:hover {
+    color: #fff;
+    transform: scale(1.2);
 }
 
 #seedDataBtn {
@@ -489,4 +523,118 @@ button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     filter: grayscale(1);
+}
+
+/* --- 10. кнопка "Export to JSON" --- */
+.btn-export {
+    margin: 0 15px 10px;
+    padding: 10px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.btn-export:hover {
+    background: #219150;
+}
+
+.sidebar.collapsed .btn-export {
+    display: none;
+}
+
+/* --- 10. СТИЛІ ДЛЯ АДАПТИВНОСТІ (ЗГОРТАННЯ САЙДБАРУ) --- */
+/* Додаємо плавність для всього сайдбару та головного контенту */
+.sidebar {
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+/* Коли додано клас collapsed */
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.sidebar.collapsed .nav-link span, 
+.sidebar.collapsed .period-selectors,
+.sidebar.collapsed #seedDataBtn,
+.sidebar.collapsed h2,
+.sidebar.collapsed .export-btn-text { /* якщо додав текст до кнопки експорту */
+    display: none !important;
+}
+
+/* Залишаємо іконки видимими */
+.sidebar.collapsed .nav-link i, 
+.sidebar.collapsed .nav-link::before { 
+    font-size: 1.2rem;
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Додає горизонтальну прокрутку тільки таблиці */
+    -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+    min-width: 800px; /* Гарантує, що колонки не злипнуться в кашу */
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column; /* Сайдбар переїжджає нагору або вниз */
+    }
+
+    .sidebar {
+        width: 100% !important;
+        height: auto;
+        position: relative;
+        border-left: none;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar.collapsed {
+        height: 60px; /* У згорнутому стані на мобілці бачимо лише шапку */
+    }
+
+    .main-content {
+        padding: 15px; /* Менші відступи на мобілці */
+    }
+
+    .side-panel {
+        width: 100%; /* Панель на весь екран на мобілці */
+    }
+    
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}
+/* ---  Порожній простір (Layout Fix) --- */
+.main-content {
+    flex-grow: 1;
+    padding: 40px;
+    overflow-y: auto;
+    background: var(--bg-color);
+    transition: margin 0.3s ease; /* додає плавності при зміні ширини сайдбару */
+}
+
+/* Додаткове вирівнювання для ідеального згорнутого стану */
+.sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
+}
+
+/* Якщо іконки - це просто текст або емодзі, зробимо їх трохи більшими */
+.sidebar.collapsed .nav-link::before,
+.sidebar.collapsed .nav-link i {
+    margin: 0;
+    font-size: 1.4rem;
 }
