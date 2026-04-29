@@ -48,7 +48,6 @@ function formatVacationPeriods(days) {
 function applyFiltersAndSort(data, tableType) {
     let filtered = [...data];
     
-    // Фільтрація
     Object.keys(state.filters).forEach(key => {
         if (state.filters[key]) {
             filtered = filtered.filter(item => 
@@ -57,7 +56,6 @@ function applyFiltersAndSort(data, tableType) {
         }
     });
 
-    // Сортування
     const { key, direction, table } = state.sortConfig;
     if (key && table === tableType) {
         filtered.sort((a, b) => {
@@ -350,6 +348,32 @@ window.deleteProject = (id) => { if(confirm("Delete project?")) { const d = getC
 // --- 6. ІНІЦІАЛІЗАЦІЯ ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Логіка перемикання сайдбару зі стрілками ---
+    const menuBtn = document.querySelector('.sidebar-header .icon-btn');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (menuBtn && sidebar) {
+        // Встановлюємо початковий символ
+        menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
+
+        menuBtn.onclick = () => {
+            sidebar.classList.toggle('collapsed');
+            // Оновлюємо стрілку залежно від нового стану
+            menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
+        };
+    }
+
+    // --- Експорт JSON ---
+    window.exportData = () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.data));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `dashboard_data_${state.currentYear}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
     const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     monthSelect.innerHTML = mNames.map((m, i) => `<option value="${i}" ${i===state.currentMonth?'selected':''}>${m}</option>`).join('');
     yearSelect.innerHTML = [2025,2026,2027].map(y => `<option value="${y}" ${y===state.currentYear?'selected':''}>${y}</option>`).join('');
@@ -365,46 +389,38 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
- seedDataBtn.onclick = () => {
+    seedDataBtn.onclick = () => {
         const d = getCurrentMonthData();
-
-        // Списки для генерації рандомних даних
         const firstNames = ["Олександр", "Марія", "Дмитро", "Анна", "Сергій", "Олена", "Андрій", "Вікторія", "Максим", "Юлія"];
         const lastNames = ["Коваленко", "Шевченко", "Мельник", "Ткаченко", "Бондаренко", "Кравченко", "Олійник", "Поліщук"];
         const positions = ["Junior", "Middle", "Senior", "Lead", "Architect"];
         const companies = ["Tech Solutions", "Global IT", "SoftServe", "DataArt", "EPAM", "Google", "Startup Inc"];
         const projectNames = ["E-commerce Platform", "Mobile Banking", "AI Chatbot", "Cloud Storage", "ERP System"];
 
-        // Функція для вибору випадкового елемента
         const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-        // 1. Створюємо випадкового співробітника
         const newEmployee = {
-            id: Date.now(), // Унікальний ID по часу
+            id: Date.now(),
             firstName: getRandom(firstNames),
             lastName: getRandom(lastNames),
-            // Випадкова дата народження (від 1980 до 2005 року), щоб точно було 18+
             dob: `${1980 + Math.floor(Math.random() * 25)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-15`,
-            salary: 1000 + Math.floor(Math.random() * 5000), // Зарплата від 1000 до 6000
+            salary: 1000 + Math.floor(Math.random() * 5000),
             position: getRandom(positions),
             vacationDays: []
         };
 
-        // 2. Створюємо випадковий проект
         const newProject = {
             id: Date.now() + 1,
             company: getRandom(companies),
             name: getRandom(projectNames),
-            budget: 20000 + Math.floor(Math.random() * 80000), // Бюджет від 20к до 100к
-            projectCapacity: 1 + Math.floor(Math.random() * 5), // Необхідна потужність 1-5
+            budget: 20000 + Math.floor(Math.random() * 80000),
+            projectCapacity: 1 + Math.floor(Math.random() * 5),
             assignments: []
         };
 
-        // Додаємо в базу
         d.employees.push(newEmployee);
         d.projects.push(newProject);
 
-        // Зберігаємо та оновлюємо таблиці
         saveState(); 
         renderEmployeesTable(); 
         renderProjectsTable();
