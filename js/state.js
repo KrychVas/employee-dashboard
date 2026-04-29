@@ -38,3 +38,24 @@ export function updatePeriod(year, month) {
     state.currentYear = parseInt(year);
     state.currentMonth = parseInt(month);
 }
+
+// Додаємо функцію копіювання місяця (Snapshot)
+export function copyFromPreviousMonth() {
+    const prevMonth = state.currentMonth === 0 ? 11 : state.currentMonth - 1;
+    const prevYear = state.currentMonth === 0 ? state.currentYear - 1 : state.currentYear;
+    const prevKey = `${prevYear}-${prevMonth}`;
+    const currentKey = `${state.currentYear}-${state.currentMonth}`;
+
+    if (state.data[prevKey]) {
+        // Робимо глибоку копію даних
+        const newData = JSON.parse(JSON.stringify(state.data[prevKey]));
+        
+        // ВИМОГА: Очищуємо відпустки, бо вони унікальні для кожного місяця
+        newData.employees.forEach(emp => emp.vacationDays = []);
+        
+        state.data[currentKey] = newData;
+        saveState();
+        return true;
+    }
+    return false;
+}
