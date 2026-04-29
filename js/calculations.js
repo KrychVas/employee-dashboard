@@ -31,7 +31,7 @@ export const calculations = {
     },
 
     // Вартість працівника: мінімум 0.5 від зарплати (Bench payment)
-    calculateEmployeeCost(salary, assignedCapacity) {
-        return salary * Math.max(0.5, assignedCapacity);
+   calculateEmployeeProjectCost(salary, assignedCapacity) {
+        return salary * assignedCapacity;
     }
 };
