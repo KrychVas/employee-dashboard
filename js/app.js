@@ -1,4 +1,4 @@
-import { state, saveState, getCurrentMonthData } from './state.js';
+import { state, saveState, getCurrentMonthData, copyFromPreviousMonth } from './state.js';
 import { calculations } from './calculations.js';
 
 // --- ЕЛЕМЕНТИ ІНТЕРФЕЙСУ ---
@@ -130,9 +130,13 @@ function calculateProjectFinances(project) {
         const emp = employees.find(e => e.id === assign.employeeId);
         if (emp) {
             const vacCoef = calculations.getVacationCoefficient(state.currentYear, state.currentMonth, emp.vacationDays || []);
-            const effCap = calculations.calculateEffectiveCapacity(assign.capacity, 1.0, vacCoef); 
+            // ВИПРАВЛЕНО: Використання коефіцієнта Fit з об'єкта призначення
+            const fit = assign.fit || 1.0;
+            const effCap = calculations.calculateEffectiveCapacity(assign.capacity, fit, vacCoef); 
             totalUsedEffectiveCapacity += effCap;
-            totalProjectCosts += calculations.calculateEmployeeCost(emp.salary, assign.capacity);
+            
+            // ВИПРАВЛЕНО: Використання пропорційної вартості для проекту
+            totalProjectCosts += calculations.calculateEmployeeProjectCost(emp.salary, assign.capacity);
         }
     });
 
@@ -145,16 +149,23 @@ function calculateProjectFinances(project) {
 
 function calculateCompanyTotalIncome() {
     const { employees, projects } = getCurrentMonthData();
-    let totalIncome = projects.reduce((sum, proj) => sum + calculateProjectFinances(proj).profit, 0);
+    // Чистий прибуток від усіх проектів
+    let totalProjectProfit = projects.reduce((sum, proj) => sum + calculateProjectFinances(proj).profit, 0);
+    
     let totalBenchCost = 0;
     employees.forEach(emp => {
         const totalLoad = projects.reduce((sum, p) => {
             const a = p.assignments.find(as => as.employeeId === emp.id);
             return sum + (a ? a.capacity : 0);
         }, 0);
-        if (totalLoad < 0.5) { totalBenchCost += emp.salary * (0.5 - totalLoad); }
+        
+        // ВИПРАВЛЕНО: Логіка Bench Cost (доплата до 0.5 окладу, якщо завантаження менше)
+        if (totalLoad < 0.5) { 
+            totalBenchCost += emp.salary * (0.5 - totalLoad); 
+        }
     });
-    return { finalIncome: totalIncome - totalBenchCost, benchCost: totalBenchCost };
+    
+    return { finalIncome: totalProjectProfit - totalBenchCost, benchCost: totalBenchCost };
 }
 
 // --- 4. РЕНДЕРИНГ ТАБЛИЦЬ ---
@@ -279,20 +290,32 @@ window.openAssignModal = function(id) {
     const { employees, projects } = getCurrentMonthData();
     const emp = employees.find(e => e.id === id);
     const load = projects.reduce((s, p) => s + (p.assignments.find(a => a.employeeId === id)?.capacity || 0), 0);
-    const avail = (1.5 - load).toFixed(1);
+    const avail = Math.max(0, (1.5 - load)).toFixed(1);
 
+    // ВИПРАВЛЕНО: Додано повзунок Fit (Відповідність проекту)
     openSidePanel(`
         <h3>Assign ${emp.firstName}</h3>
         <p>Available Load: <b>${avail}</b></p>
         <form id="assignF">
             <select name="pId" required>${projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}</select>
             <div style="margin:15px 0">Capacity: <input type="range" name="cap" min="0.1" max="${avail}" step="0.1" value="0.1" oninput="v.innerText=this.value"> <span id="v">0.1</span></div>
-            <button type="submit" class="btn-primary" style="width:100%">Assign</button>
+            <div style="margin:15px 0">Fit (Match): <input type="range" name="fit" min="0.1" max="1.0" step="0.1" value="1.0" oninput="fv.innerText=this.value"> <span id="fv">1.0</span></div>
+            <button type="submit" class="btn-primary" style="width:100%" ${avail <= 0 ? 'disabled' : ''}>Assign</button>
         </form>`);
+        
     document.getElementById('assignF').onsubmit = (e) => {
-        e.preventDefault(); const fd = new FormData(e.target);
-        const proj = projects.find(p => p.id === parseInt(fd.get('pId')));
-        proj.assignments.push({ employeeId: id, capacity: parseFloat(fd.get('cap')) });
+        e.preventDefault(); 
+        const fd = new FormData(e.target);
+        const projId = parseInt(fd.get('pId'));
+        const proj = projects.find(p => p.id === projId);
+        
+        // ВИПРАВЛЕНО: Збереження fit в об'єкті призначення
+        proj.assignments.push({ 
+            employeeId: id, 
+            capacity: parseFloat(fd.get('cap')),
+            fit: parseFloat(fd.get('fit')) 
+        });
+        
         saveState(); closeSidePanel(); renderEmployeesTable(); renderProjectsTable();
     };
 };
@@ -348,17 +371,14 @@ window.deleteProject = (id) => { if(confirm("Delete project?")) { const d = getC
 // --- 6. ІНІЦІАЛІЗАЦІЯ ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Логіка перемикання сайдбару зі стрілками ---
+    // --- Логіка перемикання сайдбару ---
     const menuBtn = document.querySelector('.sidebar-header .icon-btn');
     const sidebar = document.querySelector('.sidebar');
     
     if (menuBtn && sidebar) {
-        // Встановлюємо початковий символ
         menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
-
         menuBtn.onclick = () => {
             sidebar.classList.toggle('collapsed');
-            // Оновлюємо стрілку залежно від нового стану
             menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
         };
     }
@@ -372,6 +392,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
+    };
+
+    // ВИПРАВЛЕНО: Додана функція Snapshot (копіювання місяця)
+    window.handleSnapshot = () => {
+        if(copyFromPreviousMonth()) {
+            renderEmployeesTable(); renderProjectsTable();
+            alert("Data copied from previous month!");
+        } else {
+            alert("No data found for previous month.");
+        }
     };
 
     const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
