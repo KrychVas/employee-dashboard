@@ -292,7 +292,7 @@ window.openAssignModal = function(id) {
     const load = projects.reduce((s, p) => s + (p.assignments.find(a => a.employeeId === id)?.capacity || 0), 0);
     const avail = Math.max(0, (1.5 - load)).toFixed(1);
 
-    // ВИПРАВЛЕНО: Додано повзунок Fit (Відповідність проекту)
+    //  Додано повзунок Fit (Відповідність проекту)
     openSidePanel(`
         <h3>Assign ${emp.firstName}</h3>
         <p>Available Load: <b>${avail}</b></p>
@@ -309,7 +309,7 @@ window.openAssignModal = function(id) {
         const projId = parseInt(fd.get('pId'));
         const proj = projects.find(p => p.id === projId);
         
-        // ВИПРАВЛЕНО: Збереження fit в об'єкті призначення
+        //  Збереження fit в об'єкті призначення
         proj.assignments.push({ 
             employeeId: id, 
             capacity: parseFloat(fd.get('cap')),
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadAnchorNode.remove();
     };
 
-    // ВИПРАВЛЕНО: Додана функція Snapshot (копіювання місяця)
+    //  Додана функція Snapshot (копіювання місяця)
     window.handleSnapshot = () => {
         if(copyFromPreviousMonth()) {
             renderEmployeesTable(); renderProjectsTable();
@@ -421,8 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     seedDataBtn.onclick = () => {
         const d = getCurrentMonthData();
-        const firstNames = ["Олександр", "Марія", "Дмитро", "Анна", "Сергій", "Олена", "Андрій", "Вікторія", "Максим", "Юлія"];
-        const lastNames = ["Коваленко", "Шевченко", "Мельник", "Ткаченко", "Бондаренко", "Кравченко", "Олійник", "Поліщук"];
+        const firstNames = ["Oleksandr", "Maria", "Dmytro", "Anna", "Sergiy", "Olena", "Andriy", "Viktoria", "Maksim", "Yulia"];
+        const lastNames = ["Kovalenko", "Shevchenko", "Melnik", "Tkachenko", "Bondarenko", "Kravchenko", "Oliynik", "Polischuk", "Marchenko", "Savchenko"];
         const positions = ["Junior", "Middle", "Senior", "Lead", "Architect"];
         const companies = ["Tech Solutions", "Global IT", "SoftServe", "DataArt", "EPAM", "Google", "Startup Inc"];
         const projectNames = ["E-commerce Platform", "Mobile Banking", "AI Chatbot", "Cloud Storage", "ERP System"];
