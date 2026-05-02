@@ -376,10 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.querySelector('.sidebar');
     
     if (menuBtn && sidebar) {
-        menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
+        menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇛' : '⇚';
         menuBtn.onclick = () => {
             sidebar.classList.toggle('collapsed');
-            menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇚' : '⇛';
+            menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇛' : '⇚';
         };
     }
 

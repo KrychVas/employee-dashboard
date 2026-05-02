@@ -31,7 +31,7 @@ body {
 /* --- 2. СТРУКТУРА ДОДАТКУ --- */
 .app-container { 
     display: flex; 
-    flex-direction: row-reverse; /* САЙДБАР ПРАВОРУЧ */
+    flex-direction: row; /* САЙДБАР зліва */
     min-height: 100vh; 
 }
 
@@ -46,7 +46,8 @@ body {
     flex-direction: column;
     z-index: 100;
     position: relative;
-    border-left: 1px solid rgba(255,255,255,0.05);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    border-left: none;
 }
 
 .sidebar.collapsed { 
@@ -300,14 +301,15 @@ body {
     height: 100vh;
     background: var(--white);
     box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-    transition: left 0.4s cubic-bezier(0.05, 0.74, 0.2, 0.99);
+    transition: right 0.4s cubic-bezier(0.05, 0.74, 0.2, 0.99);
     z-index: 2000;
     padding: 30px;
     overflow-y: auto;
 }
 
 .side-panel.open {
-    left: 0;
+    right: 0;
+    left: auto; /* Забезпечує, що панель з'являється з правого краю */
 }
 
 .overlay {
