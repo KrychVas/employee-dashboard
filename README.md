@@ -9,13 +9,13 @@ A modern, interactive personnel management dashboard developed as part of a codi
 ## ✨ Features
 In alignment with the technical requirements, the project includes:
 * **Interactive Navigation:** A collapsible left-side sidebar to maximize workspace efficiency.
-* **Dynamic Side Panel:** A slide-in editing panel for seamless data management without page reloads[cite: 6].
+* **Dynamic Side Panel:** A slide-in editing panel for seamless data management without page reloads.
 * **Responsive Design:** Fully adaptive layout across various screen sizes using Flexbox and CSS variables.
-* **Modern UI:** A sleek dark theme featuring glassmorphism effects and smooth transitions[cite: 10].
+* **Modern UI:** A sleek dark theme featuring glassmorphism effects and smooth transitions.
 
 ## 🛠 Tech Stack
 * **HTML5:** Semantic structure and layout.
-* **CSS3:** Advanced styling using Flexbox, CSS Variables, and custom animations[cite: 10].
+* **CSS3:** Advanced styling using Flexbox, CSS Variables, and custom animations.
 * **JavaScript (ES6+):** Interactive logic for menu toggling, DOM manipulation, and event handling.
 
 ## 🚀 Local Setup
