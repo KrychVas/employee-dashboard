@@ -572,7 +572,7 @@ button:disabled {
 
 /* 10.2 Кнопка-бургер (Фіксована справа) */
 .menu-toggle {
-    display: none;
+    display: none; 
     flex-direction: column;
     justify-content: space-around;
     width: 30px;
@@ -604,6 +604,7 @@ button:disabled {
     .app-container {
         display: block !important;
     }
+    
 
     /* МЕНЮ НА ВЕСЬ ЕКРАН */
     .sidebar {
@@ -690,7 +691,4 @@ button:disabled {
         color: #666;
     }
 
-    #toggleSidebar {
-        display: none !important;
-    }
 }
