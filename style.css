@@ -549,14 +549,16 @@ button:disabled {
     display: none;
 }
 
-/* --- 10. СТИЛІ ДЛЯ АДАПТИВНОСТІ (ЗГОРТАННЯ САЙДБАРУ) --- */
-/* Додаємо плавність для всього сайдбару та головного контенту */
+/* --- 10. ФІНАЛЬНА АДАПТИВНІСТЬ: ПОВНОЕКРАННЕ МЕНЮ ТА ТАБЛИЦЯ-СТОВПЧИК --- */
+
+/* 10.1 Десктопна логіка (Згортання до 70px) */
 .sidebar {
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, right 0.3s ease, left 0.3s ease;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Коли додано клас collapsed */
 .sidebar.collapsed {
     width: 70px;
 }
@@ -564,80 +566,131 @@ button:disabled {
 .sidebar.collapsed .nav-link span, 
 .sidebar.collapsed .period-selectors,
 .sidebar.collapsed #seedDataBtn,
-.sidebar.collapsed h2,
-.sidebar.collapsed .export-btn-text { /* якщо додав текст до кнопки експорту */
+.sidebar.collapsed h2 {
     display: none !important;
 }
 
-/* Залишаємо іконки видимими */
-.sidebar.collapsed .nav-link i, 
-.sidebar.collapsed .nav-link::before { 
-    font-size: 1.2rem;
+/* 10.2 Кнопка-бургер (Фіксована справа) */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 3000; /* Поверх усього */
+    position: fixed;
+    top: 20px;
+    right: 20px;
 }
 
-.table-container {
-    width: 100%;
-    overflow-x: auto; /* Додає горизонтальну прокрутку тільки таблиці */
-    -webkit-overflow-scrolling: touch;
+.bar {
+    width: 30px;
+    height: 3px;
+    background-color: var(--accent-color, #3498db);
+    border-radius: 10px;
+    transition: all 0.3s ease;
 }
 
-.data-table {
-    min-width: 800px; /* Гарантує, що колонки не злипнуться в кашу */
-}
-
+/* 10.3 Адаптивність (max-width: 768px) */
 @media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
+
     .app-container {
-        flex-direction: column; /* Сайдбар переїжджає нагору або вниз */
+        display: block !important;
     }
 
+    /* МЕНЮ НА ВЕСЬ ЕКРАН */
     .sidebar {
-        width: 100% !important;
-        height: auto;
-        position: relative;
-        border-left: none;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: fixed !important;
+        top: 0;
+        right: -100% !important;
+        left: auto !important;
+        width: 100% !important; /* На весь екран */
+        height: 100vh !important;
+        z-index: 2500 !important;
+        background: #1e293b !important;
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
     }
 
-    .sidebar.collapsed {
-        height: 60px; /* У згорнутому стані на мобілці бачимо лише шапку */
+    .sidebar.active {
+        right: 0 !important;
+    }
+
+    .sidebar-content {
+        width: 80%;
     }
 
     .main-content {
-        padding: 15px; /* Менші відступи на мобілці */
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 80px 10px 10px 10px !important;
     }
 
-    .side-panel {
-        width: 100%; /* Панель на весь екран на мобілці */
+    /* АНІМАЦІЯ ХРЕСТИКА */
+    .menu-toggle.open .bar:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+        background-color: #fff; /* Білий колір на темному фоні меню */
     }
-    
-    .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+
+    .menu-toggle.open .bar:nth-child(2) {
+        transform: rotate(-45deg) translate(2px, -2px);
+        background-color: #fff;
     }
-}
-/* ---  Порожній простір (Layout Fix) --- */
-.main-content {
-    flex-grow: 1;
-    padding: 40px;
-    overflow-y: auto;
-    background: var(--bg-color);
-    transition: margin 0.3s ease; /* додає плавності при зміні ширини сайдбару */
-}
 
-/* Додаткове вирівнювання для ідеального згорнутого стану */
-.sidebar.collapsed .nav-link {
-    justify-content: center;
-    padding: 15px 0;
-}
+    /* ТАБЛИЦЯ У СТОВПЧИК (КАРТКИ) */
+    .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr {
+        display: block !important;
+        width: 100% !important;
+    }
 
-.sidebar.collapsed .sidebar-header {
-    justify-content: center;
-}
+    .data-table thead {
+        display: none !important; /* Ховаємо заголовки таблиці */
+    }
 
-/* Якщо іконки - це просто текст або емодзі, зробимо їх трохи більшими */
-.sidebar.collapsed .nav-link::before,
-.sidebar.collapsed .nav-link i {
-    margin: 0;
-    font-size: 1.4rem;
+    .data-table tr {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .data-table td {
+        text-align: right !important;
+        padding-left: 50% !important;
+        position: relative;
+        border: none !important;
+        border-bottom: 1px solid #eee !important;
+    }
+
+    .data-table td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Додаємо назви колонок перед даними */
+    .data-table td::before {
+        content: attr(data-label); /* Використовує атрибут data-label з HTML */
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: #666;
+    }
+
+    #toggleSidebar {
+        display: none !important;
+    }
 }

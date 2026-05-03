@@ -43,6 +43,16 @@ function formatVacationPeriods(days) {
     return periods.join(', ');
 }
 
+// --- НОВА ФУНКЦІЯ: ЗАКРИТТЯ МОБІЛЬНОГО МЕНЮ ---
+function closeMobileMenu() {
+    const menuBtn = document.getElementById('menuToggle');
+    const sideMenu = document.getElementById('sidebar');
+    if (window.innerWidth <= 768 && sideMenu && sideMenu.classList.contains('active')) {
+        menuBtn.classList.remove('open');
+        sideMenu.classList.remove('active');
+    }
+}
+
 // --- 2. СОРТУВАННЯ ТА ФІЛЬТРАЦІЯ ---
 
 function applyFiltersAndSort(data, tableType) {
@@ -130,12 +140,9 @@ function calculateProjectFinances(project) {
         const emp = employees.find(e => e.id === assign.employeeId);
         if (emp) {
             const vacCoef = calculations.getVacationCoefficient(state.currentYear, state.currentMonth, emp.vacationDays || []);
-            // ВИПРАВЛЕНО: Використання коефіцієнта Fit з об'єкта призначення
             const fit = assign.fit || 1.0;
             const effCap = calculations.calculateEffectiveCapacity(assign.capacity, fit, vacCoef); 
             totalUsedEffectiveCapacity += effCap;
-            
-            // ВИПРАВЛЕНО: Використання пропорційної вартості для проекту
             totalProjectCosts += calculations.calculateEmployeeProjectCost(emp.salary, assign.capacity);
         }
     });
@@ -149,7 +156,6 @@ function calculateProjectFinances(project) {
 
 function calculateCompanyTotalIncome() {
     const { employees, projects } = getCurrentMonthData();
-    // Чистий прибуток від усіх проектів
     let totalProjectProfit = projects.reduce((sum, proj) => sum + calculateProjectFinances(proj).profit, 0);
     
     let totalBenchCost = 0;
@@ -159,7 +165,6 @@ function calculateCompanyTotalIncome() {
             return sum + (a ? a.capacity : 0);
         }, 0);
         
-        // ВИПРАВЛЕНО: Логіка Bench Cost (доплата до 0.5 окладу, якщо завантаження менше)
         if (totalLoad < 0.5) { 
             totalBenchCost += emp.salary * (0.5 - totalLoad); 
         }
@@ -197,11 +202,11 @@ function renderEmployeesTable() {
                     }, 0);
                     return `
                     <tr>
-                        <td><strong>${emp.firstName} ${emp.lastName}</strong><div style="font-size:0.7rem;color:#718096;">📅 ${formatVacationPeriods(emp.vacationDays)}</div></td>
-                        <td>${calculateAge(emp.dob)}</td>
-                        <td>${emp.position}</td>
-                        <td>$${formatCurrency(emp.salary)}</td>
-                        <td><span class="btn-small">${empLoad.toFixed(1)} / 1.5</span></td>
+                        <td data-label="Name"><strong>${emp.firstName} ${emp.lastName}</strong><div style="font-size:0.7rem;color:#718096;">📅 ${formatVacationPeriods(emp.vacationDays)}</div></td>
+                        <td data-label="Age">${calculateAge(emp.dob)}</td>
+                        <td data-label="Pos">${emp.position}</td>
+                        <td data-label="Salary">$${formatCurrency(emp.salary)}</td>
+                        <td data-label="Load"><span class="btn-small">${empLoad.toFixed(1)} / 1.5</span></td>
                         <td>
                             <button class="btn-small" onclick="openAvailabilityCalendar(${emp.id})">📅</button>
                             <button class="btn-small" ${empLoad >= 1.5 ? 'disabled' : ''} onclick="openAssignModal(${emp.id})">🔗</button>
@@ -239,9 +244,9 @@ function renderProjectsTable() {
                     const fin = calculateProjectFinances(proj);
                     return `
                     <tr>
-                        <td>${proj.company}</td><td><strong>${proj.name}</strong></td><td>$${formatCurrency(proj.budget)}</td>
-                        <td>${fin.usedCapacity.toFixed(1)} / ${proj.projectCapacity}</td>
-                        <td style="color:${fin.profit >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(fin.profit)}</td>
+                        <td data-label="Company">${proj.company}</td><td data-label="Project"><strong>${proj.name}</strong></td><td data-label="Budget">$${formatCurrency(proj.budget)}</td>
+                        <td data-label="Capacity">${fin.usedCapacity.toFixed(1)} / ${proj.projectCapacity}</td>
+                        <td data-label="Profit" style="color:${fin.profit >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(fin.profit)}</td>
                         <td>
                             <button class="btn-small-edit" onclick="editProject(${proj.id})">Edit</button>
                             <button class="btn-danger-small" onclick="deleteProject(${proj.id})">Del</button>
@@ -292,7 +297,6 @@ window.openAssignModal = function(id) {
     const load = projects.reduce((s, p) => s + (p.assignments.find(a => a.employeeId === id)?.capacity || 0), 0);
     const avail = Math.max(0, (1.5 - load)).toFixed(1);
 
-    //  Додано повзунок Fit (Відповідність проекту)
     openSidePanel(`
         <h3>Assign ${emp.firstName}</h3>
         <p>Available Load: <b>${avail}</b></p>
@@ -309,7 +313,6 @@ window.openAssignModal = function(id) {
         const projId = parseInt(fd.get('pId'));
         const proj = projects.find(p => p.id === projId);
         
-        //  Збереження fit в об'єкті призначення
         proj.assignments.push({ 
             employeeId: id, 
             capacity: parseFloat(fd.get('cap')),
@@ -371,18 +374,8 @@ window.deleteProject = (id) => { if(confirm("Delete project?")) { const d = getC
 // --- 6. ІНІЦІАЛІЗАЦІЯ ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Логіка перемикання сайдбару ---
-    const menuBtn = document.querySelector('.sidebar-header .icon-btn');
     const sidebar = document.querySelector('.sidebar');
     
-    if (menuBtn && sidebar) {
-        menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇛' : '⇚';
-        menuBtn.onclick = () => {
-            sidebar.classList.toggle('collapsed');
-            menuBtn.innerText = sidebar.classList.contains('collapsed') ? '⇛' : '⇚';
-        };
-    }
-
     // --- Експорт JSON ---
     window.exportData = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.data));
@@ -394,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadAnchorNode.remove();
     };
 
-    //  Додана функція Snapshot (копіювання місяця)
     window.handleSnapshot = () => {
         if(copyFromPreviousMonth()) {
             renderEmployeesTable(); renderProjectsTable();
@@ -416,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const t = link.getAttribute('data-tab');
             navLinks.forEach(l => l.classList.remove('active')); link.classList.add('active');
             pages.forEach(p => p.style.display = p.id === `${t}-page` ? 'block' : 'none');
+            closeMobileMenu(); // АВТОЗАКРИТТЯ ПРИ ПЕРЕМИКАННІ ВКЛАДОК
         };
     });
 
@@ -454,6 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState(); 
         renderEmployeesTable(); 
         renderProjectsTable();
+        closeMobileMenu(); // АВТОЗАКРИТТЯ ПРИ ГЕНЕРАЦІЇ ДАНИХ
     };
 
     document.getElementById('openAddEmployee').onclick = () => {
@@ -490,3 +484,14 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.onclick = closeSidePanel;
     renderEmployeesTable(); renderProjectsTable();
 });
+
+// Логіка для мобільного меню (бургер справа)
+const menuBtn = document.getElementById('menuToggle');
+const sideMenu = document.getElementById('sidebar');
+
+if (menuBtn && sideMenu) {
+    menuBtn.addEventListener('click', () => {
+        menuBtn.classList.toggle('open');
+        sideMenu.classList.toggle('active');
+    });
+}

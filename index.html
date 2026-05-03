@@ -7,10 +7,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- 1. НОВА КНОПКА (ДЛЯ МОБІЛОК) -->
+    <!-- Вона з'явиться тільки на екранах < 768px завдяки нашому CSS -->
+    <button class="menu-toggle" id="menuToggle">
+        <span class="bar"></span>
+        <span class="bar"></span>
+    </button>
+
     <div class="app-container">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button id="toggleSidebar" class="icon-btn">☰</button>
+                <!-- 2. СТАРА КНОПКА (ДЛЯ ДЕСКТОПА) -->
+                <button id="toggleSidebar" class="icon-btn">
+                    <i class="arrow-icon"></i> 
+                </button>
             </div>
             
             <div class="sidebar-content">
