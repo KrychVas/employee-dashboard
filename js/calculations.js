@@ -30,8 +30,8 @@ export const calculations = {
         return assignedCapacity * fit * vacationCoefficient;
     },
 
-    // Вартість працівника: мінімум 0.5 від зарплати (Bench payment)
-   calculateEmployeeProjectCost(salary, assignedCapacity) {
-        return salary * assignedCapacity;
+    // Вартість працівника: мінімум 0.5 від зарплати (Requirement 5)
+   calculateEmployeeCost(salary, assignedCapacity) {
+        return salary * Math.max(0.5, assignedCapacity);
     }
 };

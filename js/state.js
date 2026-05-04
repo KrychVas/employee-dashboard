@@ -47,12 +47,9 @@ export function copyFromPreviousMonth() {
     const currentKey = `${state.currentYear}-${state.currentMonth}`;
 
     if (state.data[prevKey]) {
-        // Робимо глибоку копію даних
         const newData = JSON.parse(JSON.stringify(state.data[prevKey]));
-        
-        // ВИМОГА: Очищуємо відпустки, бо вони унікальні для кожного місяця
-        newData.employees.forEach(emp => emp.vacationDays = []);
-        
+        // Вимога: Дні відпустки очищуються під час копіювання
+        newData.employees.forEach(e => e.vacationDays = []);
         state.data[currentKey] = newData;
         saveState();
         return true;
