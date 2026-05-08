@@ -66,13 +66,13 @@ function formatVacationPeriods(days) {
   return periods.join(', ');
 }
 
-window.showToast = function(message, type = 'success') {
+window.showToast = function (message, type = 'success') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerText = message;
   container.appendChild(toast);
-  
+
   setTimeout(() => toast.remove(), 3000);
 };
 
@@ -438,10 +438,10 @@ window.openAssignmentsModal = function (empId) {
         calculations.calculateEmployeeCost(emp.salary, assign.capacity);
 
       html += `<tr>
-                <td><a href="#" onclick="goToProject('${proj.name}')">${proj.name}</a></td>
-                <td>${assign.capacity}</td>
-                <td style="color:${profit >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(profit)}</td>
-                <td>
+                <td data-label="Project"><a href="#" onclick="goToProject('${proj.name}')">${proj.name}</a></td>
+                <td data-label="Cap">${assign.capacity}</td>
+                <td data-label="Profit" style="color:${profit >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(profit)}</td>
+                <td data-label="Actions">
                     <button class="btn-small" onclick="editAssignment(${proj.id}, ${empId})">✎</button>
                     <button class="btn-danger-small" onclick="unassign(${proj.id}, ${empId})">×</button>
                 </td>
@@ -484,10 +484,10 @@ window.openProjectEmployeesModal = function (projId) {
     const rev = (fin.revenuePerCap || 0) * eff;
     const cost = calculations.calculateEmployeeCost(emp.salary, as.capacity);
     html += `<tr>
-            <td>${emp.firstName}</td>
-            <td>${eff.toFixed(3)}</td>
-            <td style="color:${rev - cost >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(rev - cost)}</td>
-            <td>
+            <td data-label="Name">${emp.firstName}</td>
+            <td data-label="Eff. Cap">${eff.toFixed(3)}</td>
+            <td data-label="Profit" style="color:${rev - cost >= 0 ? '#27ae60' : '#e74c3c'}">$${formatCurrency(rev - cost)}</td>
+            <td data-label="Action">
                 <button class="btn-small" onclick="editAssignment(${projId}, ${emp.id})">✎</button>
                 <button class="btn-danger-small" onclick="unassign(${projId}, ${emp.id})">×</button>
             </td>
@@ -575,15 +575,20 @@ window.confirmUnassignAction = (pId, eId) => {
 // --- 5. МОДАЛЬНІ ВІКНА ---
 
 function openSidePanel(html) {
+  closeMobileMenu(); // Закриваємо мобільне меню при відкритті панелі
   sidePanel.innerHTML =
-    `<button class="btn-danger-small" style="position:absolute; top:10px; right:10px; border-radius:50%;" onclick="closeSidePanel()">×</button>` +
+    `<button class="btn-danger-small side-panel-close" onclick="closeSidePanel()">×</button>` +
     html;
   sidePanel.classList.add('open');
   overlay.classList.add('active');
+  document.body.style.overflow = 'hidden'; // Блокуємо прокрутку фону
+  document.body.classList.add('side-panel-open'); // Для приховування бургера через CSS
 }
 window.closeSidePanel = () => {
   sidePanel.classList.remove('open');
   overlay.classList.remove('active');
+  document.body.style.overflow = ''; // Відновлюємо прокрутку
+  document.body.classList.remove('side-panel-open');
 };
 
 window.openAvailabilityCalendar = function (id) {
@@ -656,7 +661,7 @@ window.openAssignModal = function (id) {
     });
 
     saveState();
-    closeModal();
+    closeSidePanel(); // Виправлено з closeModal на closeSidePanel
     renderEmployeesTable();
     renderProjectsTable();
     showToast('Employee assigned to project');
@@ -1073,7 +1078,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   overlay.onclick = () => {
     closeSidePanel();
-    closeModal();
   };
 
   renderEmployeesTable();

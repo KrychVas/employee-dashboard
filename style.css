@@ -10,6 +10,7 @@
   --text-main: #2d3748;
   --text-muted: #718096;
   --white: #ffffff;
+  --accent-color: #3498db;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -304,21 +305,36 @@ body {
 .side-panel {
   position: fixed;
   top: 0;
-  left: -450px; /* Ховаємо зліва */
-  right: auto;
+  right: 0;
   width: 400px;
+  max-width: 100%;
   height: 100vh;
   background: var(--white);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
-  transition: right 0.4s cubic-bezier(0.05, 0.74, 0.2, 0.99);
+  transform: translateX(105%); /* Ховаємо справа */
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 2000;
   padding: 30px;
   overflow-y: auto;
 }
 
 .side-panel.open {
-  right: 0;
-  left: auto; /* Забезпечує, що панель з'являється з правого краю */
+  transform: translateX(0);
+}
+
+/* Кнопка закриття всередині бічної панелі */
+.side-panel-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2010;
+  font-size: 20px;
 }
 
 .overlay {
@@ -597,7 +613,7 @@ button:disabled {
   z-index: 3000; /* Поверх усього */
   position: fixed;
   top: 20px;
-  right: 20px;
+  right: 15px; /* Вирівнюємо з відступами контенту */
 }
 
 .bar {
@@ -606,6 +622,11 @@ button:disabled {
   background-color: var(--accent-color, #3498db);
   border-radius: 10px;
   transition: all 0.3s ease;
+}
+
+/* ХОВАЄМО БУРГЕР, КОЛИ ВІДКРИТА ПАНЕЛЬ (через клас на body) */
+body.side-panel-open .menu-toggle {
+  display: none !important;
 }
 
 /* 10.3 Адаптивність (max-width: 768px) */
@@ -634,9 +655,31 @@ button:disabled {
     z-index: 2500 !important;
     background: #1e293b !important;
     display: flex !important;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
     text-align: center;
+    padding-top: 80px; /* Відступ зверху для контенту */
+  }
+
+  .sidebar .nav-link {
+    color: #fff !important; /* Білий текст для контрасту в мобільному меню */
+    font-size: 1.2rem;
+    justify-content: center;
+    border: none;
+    margin-bottom: 15px;
+  }
+
+  /* ПРИМУСОВО ПОКАЗУЄМО КОНТЕНТ НА МОБІЛЬНИХ, НАВІТЬ ЯКЩО Є КЛАС .collapsed */
+  .sidebar.collapsed .sidebar-content,
+  .sidebar.collapsed .period-selectors,
+  .sidebar.collapsed #seedDataBtn,
+  .sidebar.collapsed .nav-link span {
+    display: block !important;
+  }
+
+  .sidebar-header {
+    display: none !important; /* Ховаємо десктопну стрілку в мобільному меню */
   }
 
   .sidebar.active {
@@ -650,7 +693,7 @@ button:disabled {
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
-    padding: 80px 10px 10px 10px !important;
+    padding: 80px 15px 20px 15px !important;
   }
 
   /* АНІМАЦІЯ ХРЕСТИКА */
@@ -662,6 +705,11 @@ button:disabled {
   .menu-toggle.open .bar:nth-child(2) {
     transform: rotate(-45deg) translate(2px, -2px);
     background-color: #fff;
+  }
+
+  /* Адаптивність форми у Side Panel */
+  .side-panel {
+    padding: 60px 20px 20px; /* Місце для кнопки закриття */
   }
 
   /* ТАБЛИЦЯ У СТОВПЧИК (КАРТКИ) */
@@ -680,7 +728,7 @@ button:disabled {
   }
 
   .data-table tr {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 10px;
@@ -689,11 +737,14 @@ button:disabled {
   }
 
   .data-table td {
-    text-align: right !important;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
     padding-left: 50% !important;
-    position: relative;
     border: none !important;
     border-bottom: 1px solid #eee !important;
+    min-height: 45px;
   }
 
   .data-table td:last-child {
@@ -703,14 +754,22 @@ button:disabled {
   /* Додаємо назви колонок перед даними */
   .data-table td::before {
     content: attr(data-label); /* Використовує атрибут data-label з HTML */
-    position: absolute;
     left: 10px;
     width: 45%;
     padding-right: 10px;
     white-space: nowrap;
     text-align: left;
     font-weight: bold;
-    color: #666;
+    color: var(--text-muted);
+  }
+
+  /* Оптимізація календаря на мобільних */
+  .calendar-grid {
+    gap: 4px;
+    padding: 10px;
+  }
+  .calendar-day {
+    font-size: 0.8rem;
   }
 }
 
@@ -771,7 +830,9 @@ button:disabled {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 0.9rem;
   border-left: 4px solid var(--primary);
-  animation: toast-in 0.3s ease forwards, toast-out 0.3s ease forwards 2.7s;
+  animation:
+    toast-in 0.3s ease forwards,
+    toast-out 0.3s ease forwards 2.7s;
 }
 
 .toast.danger {
@@ -779,11 +840,23 @@ button:disabled {
 }
 
 @keyframes toast-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes toast-out {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
